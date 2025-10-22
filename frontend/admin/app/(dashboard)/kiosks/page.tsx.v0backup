@@ -1,0 +1,2186 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
+  Package,
+  Settings,
+  Eye,
+  EyeOff,
+  Clock,
+  Phone,
+  Plus,
+  ArrowLeft,
+  Unlock,
+  MoreHorizontal,
+  Monitor,
+  RefreshCw,
+  Info,
+  History,
+  MessageSquare,
+} from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+
+// 케어박스 데이터 타입
+interface CareBox {
+  id: number
+  name: string
+  location: string
+  rentedCount: number
+  totalCount: number
+  arGlasses: { rented: number; total: number }
+  boneHeadphones: { rented: number; total: number }
+  smartphones: { rented: number; total: number }
+  status: "normal" | "warning" | "error"
+  headphones: { rented: number; total: number }
+}
+
+interface EquipmentBox {
+  id: string
+  name: string
+  type: "AR글라스" | "골전도이어폰" | "스마트폰"
+  status: "available" | "rented" | "broken"
+  renterPhone?: string
+  rentTime?: string
+  returnTime?: string
+}
+
+interface DetailedCareBox extends CareBox {
+  manager: string
+  managerPhone: string
+  installDate: string
+  lastMaintenance: string
+  notes: string
+  equipmentBoxes: EquipmentBox[]
+  contact: string
+}
+
+interface OverdueRental {
+  id: string
+  careBoxName: string
+  careBoxLocation: string
+  equipmentName: string
+  equipmentType: "AR글라스" | "골전도이어폰" | "스마트폰"
+  renterPhone: string
+  rentTime: string
+  hoursOverdue: number
+  severity: "warning" | "critical" | "urgent"
+}
+
+interface FacilityManager {
+  id: string
+  username: string
+  password: string
+  facilityName: string
+  managerPhone: string
+  createdDate: string
+  status: "active" | "inactive"
+}
+
+// 샘플 데이터
+const careBoxes: CareBox[] = [
+  {
+    id: 1,
+    name: "Go Together1", // 케어박스1 → Go Together1
+    location: "서울시 메가박스",
+    rentedCount: 3,
+    totalCount: 9,
+    arGlasses: { rented: 1, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 2,
+    name: "Go Together2", // 케어박스2 → Go Together2
+    location: "부산시 CGV",
+    rentedCount: 5,
+    totalCount: 9,
+    arGlasses: { rented: 3, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "warning",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 3,
+    name: "Go Together3", // 케어박스3 → Go Together3
+    location: "대구시 롯데시네마",
+    rentedCount: 2,
+    totalCount: 9,
+    arGlasses: { rented: 1, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 4,
+    name: "Go Together4", // 케어박스4 → Go Together4
+    location: "인천시 메가박스",
+    rentedCount: 4,
+    totalCount: 9,
+    arGlasses: { rented: 2, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 5,
+    name: "Go Together5", // 케어박스5 → Go Together5
+    location: "광주시 CGV",
+    rentedCount: 6,
+    totalCount: 9,
+    arGlasses: { rented: 4, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "warning",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 6,
+    name: "Go Together6", // 케어박스6 → Go Together6
+    location: "대전시 롯데시네마",
+    rentedCount: 1,
+    totalCount: 9,
+    arGlasses: { rented: 1, total: 5 },
+    boneHeadphones: { rented: 0, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 0, total: 2 },
+  },
+  {
+    id: 7,
+    name: "Go Together7", // 케어박스7 → Go Together7
+    location: "울산시 메가박스",
+    rentedCount: 3,
+    totalCount: 9,
+    arGlasses: { rented: 2, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 8,
+    name: "Go Together8", // 케어박스8 → Go Together8
+    location: "수원시 CGV",
+    rentedCount: 7,
+    totalCount: 9,
+    arGlasses: { rented: 5, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "error",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 9,
+    name: "Go Together9", // 케어박스9 → Go Together9
+    location: "창원시 롯데시네마",
+    rentedCount: 2,
+    totalCount: 9,
+    arGlasses: { rented: 1, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 10,
+    name: "Go Together10", // 케어박스10 → Go Together10
+    location: "고양시 메가박스",
+    rentedCount: 4,
+    totalCount: 9,
+    arGlasses: { rented: 2, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 11,
+    name: "Go Together11", // 케어박스11 → Go Together11
+    location: "청주시 CGV",
+    rentedCount: 3,
+    totalCount: 9,
+    arGlasses: { rented: 2, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 12,
+    name: "Go Together12", // 케어박스12 → Go Together12
+    location: "전주시 롯데시네마",
+    rentedCount: 5,
+    totalCount: 9,
+    arGlasses: { rented: 3, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "warning",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 13,
+    name: "Go Together13", // 케어박스13 → Go Together13
+    location: "포항시 메가박스",
+    rentedCount: 1,
+    totalCount: 9,
+    arGlasses: { rented: 0, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 14,
+    name: "Go Together14", // 케어박스14 → Go Together14
+    location: "제주시 CGV",
+    rentedCount: 6,
+    totalCount: 9,
+    arGlasses: { rented: 4, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 1, total: 2 },
+    status: "warning",
+    headphones: { rented: 1, total: 2 },
+  },
+  {
+    id: 15,
+    name: "Go Together15", // 케어박스15 → Go Together15
+    location: "강릉시 롯데시네마",
+    rentedCount: 2,
+    totalCount: 9,
+    arGlasses: { rented: 1, total: 5 },
+    boneHeadphones: { rented: 1, total: 2 },
+    smartphones: { rented: 0, total: 2 },
+    status: "normal",
+    headphones: { rented: 1, total: 2 },
+  },
+]
+
+const overdueRentals: OverdueRental[] = [
+  {
+    id: "1",
+    careBoxName: "Go Together3", // 케어박스3 → Go Together3
+    careBoxLocation: "대구시 롯데시네마",
+    equipmentName: "001_AR글라스",
+    equipmentType: "AR글라스",
+    renterPhone: "010-1234-5678",
+    rentTime: "2024.01.15 14:30",
+    hoursOverdue: 26,
+    severity: "warning",
+  },
+  {
+    id: "2",
+    careBoxName: "Go Together7", // 케어박스7 → Go Together7
+    careBoxLocation: "광주시 메가박스",
+    equipmentName: "003_AR글라스",
+    equipmentType: "AR글라스",
+    renterPhone: "010-9876-5432",
+    rentTime: "2024.01.14 19:45",
+    hoursOverdue: 43,
+    severity: "critical",
+  },
+]
+
+export default function CareBoxAdmin() {
+  const [currentView, setCurrentView] = useState<"status" | "realtime" | "overdue" | "facility">("status")
+  const [selectedCareBox, setSelectedCareBox] = useState<number | null>(null)
+  const [careBoxDetailTab, setCareBoxDetailTab] = useState<"usage" | "info">("usage")
+  const [showEquipmentDetailPage, setShowEquipmentDetailPage] = useState(false)
+  const [selectedEquipmentName, setSelectedEquipmentName] = useState<string>("")
+  const [showPhoneNumbers, setShowPhoneNumbers] = useState(false)
+  const [showAddFacility, setShowAddFacility] = useState(false)
+  const [selectedOverdueCareBox, setSelectedOverdueCareBox] = useState<string>("all")
+  const [overdueFilter, setOverdueFilter] = useState<"all" | "24h" | "48h" | "72h">("all")
+  const [overdueSortBy, setOverdueSortBy] = useState<"time" | "location" | "equipment">("time")
+  const [equipmentDateFilter, setEquipmentDateFilter] = useState(new Date().toISOString().split("T")[0])
+
+  // Added facility management states
+  const [facilityManagers, setFacilityManagers] = useState<FacilityManager[]>([
+    {
+      id: "1",
+      username: "001",
+      password: "123456",
+      facilityName: "서울시각장애인복지관",
+      managerPhone: "02-1234-5678",
+      createdDate: "2023.03.15",
+      status: "active",
+    },
+    {
+      id: "2",
+      username: "002",
+      password: "789012",
+      facilityName: "부산시각장애인복지관",
+      managerPhone: "051-9876-5432",
+      createdDate: "2023.04.20",
+      status: "active",
+    },
+    {
+      id: "3",
+      username: "003",
+      password: "345678",
+      facilityName: "대구시각장애인복지관",
+      managerPhone: "053-1111-2222",
+      createdDate: "2023.05.10",
+      status: "inactive",
+    },
+  ])
+  const [showAddFacilityModal, setShowAddFacilityModal] = useState(false)
+  const [editingFacility, setEditingFacility] = useState<FacilityManager | null>(null)
+  const [facilitySearchTerm, setFacilitySearchTerm] = useState("")
+  const [facilityStatusFilter, setFacilityStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [newFacility, setNewFacility] = useState({
+    facilityName: "",
+    managerPhone: "",
+  })
+
+  const [overdueStartDate, setOverdueStartDate] = useState(
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  )
+  const [overdueEndDate, setOverdueEndDate] = useState(new Date().toISOString().split("T")[0])
+
+  const detailedCareBoxes: DetailedCareBox[] = [
+    {
+      id: 1,
+      name: "Go Together1", // 케어박스1 → Go Together1
+      location: "서울시 메가박스",
+      rentedCount: 3,
+      totalCount: 9,
+      arGlasses: { rented: 1, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "normal",
+      manager: "김관리",
+      managerPhone: "02-1234-5678",
+      installDate: "2023.03.15",
+      lastMaintenance: "2024.01.10",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1234-5678",
+          rentTime: "2024.01.16 14:30",
+        },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-9876-5432",
+          rentTime: "2024.01.16 15:45",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-5555-1234",
+          rentTime: "2024.01.16 16:20",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "broken" },
+      ],
+      contact: "02-1234-5678",
+    },
+    {
+      id: 2,
+      name: "Go Together2", // 케어박스2 → Go Together2
+      location: "부산시 CGV",
+      rentedCount: 5,
+      totalCount: 9,
+      arGlasses: { rented: 3, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "warning",
+      manager: "이담당",
+      managerPhone: "051-2345-6789",
+      installDate: "2023.04.20",
+      lastMaintenance: "2024.01.05",
+      notes: "대여율 높음, 추가 기기 검토 필요",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1111-2222",
+          rentTime: "2024.01.16 10:15",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-3333-4444",
+          rentTime: "2024.01.16 11:30",
+        },
+        {
+          id: "003",
+          name: "003_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-5555-6666",
+          rentTime: "2024.01.16 13:45",
+        },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-7777-8888",
+          rentTime: "2024.01.16 14:20",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-9999-0000",
+          rentTime: "2024.01.16 15:10",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "051-2345-6789",
+    },
+    {
+      id: 3,
+      name: "Go Together3", // 케어박스3 → Go Together3
+      location: "대구시 롯데시네마",
+      rentedCount: 2,
+      totalCount: 9,
+      arGlasses: { rented: 1, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "박시설",
+      managerPhone: "053-3456-7890",
+      installDate: "2023.05.10",
+      lastMaintenance: "2024.01.12",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1234-9876",
+          rentTime: "2024.01.16 16:00",
+        },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-5678-1234",
+          rentTime: "2024.01.16 17:15",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "053-3456-7890",
+    },
+    {
+      id: 4,
+      name: "Go Together4", // 케어박스4 → Go Together4
+      location: "인천시 메가박스",
+      rentedCount: 4,
+      totalCount: 9,
+      arGlasses: { rented: 2, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "normal",
+      manager: "최운영",
+      managerPhone: "032-4567-8901",
+      installDate: "2023.06.01",
+      lastMaintenance: "2024.01.08",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-2468-1357",
+          rentTime: "2024.01.16 12:30",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1357-2468",
+          rentTime: "2024.01.16 13:45",
+        },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-9753-8642",
+          rentTime: "2024.01.16 14:20",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-8642-9753",
+          rentTime: "2024.01.16 15:30",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "032-4567-8901",
+    },
+    {
+      id: 5,
+      name: "Go Together5", // 케어박스5 → Go Together5
+      location: "광주시 CGV",
+      rentedCount: 6,
+      totalCount: 9,
+      arGlasses: { rented: 4, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "warning",
+      manager: "정관리",
+      managerPhone: "062-5678-9012",
+      installDate: "2023.07.15",
+      lastMaintenance: "2024.01.03",
+      notes: "대여율 높음, 기기 추가 필요",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1111-3333",
+          rentTime: "2024.01.16 09:30",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-2222-4444",
+          rentTime: "2024.01.16 10:45",
+        },
+        {
+          id: "003",
+          name: "003_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-3333-5555",
+          rentTime: "2024.01.16 11:20",
+        },
+        {
+          id: "004",
+          name: "004_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-4444-6666",
+          rentTime: "2024.01.16 12:15",
+        },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-5555-7777",
+          rentTime: "2024.01.16 13:30",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-6666-8888",
+          rentTime: "2024.01.16 14:45",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "062-5678-9012",
+    },
+    {
+      id: 6,
+      name: "Go Together6", // 케어박스6 → Go Together6
+      location: "대전시 롯데시네마",
+      rentedCount: 1,
+      totalCount: 9,
+      arGlasses: { rented: 1, total: 5 },
+      boneHeadphones: { rented: 0, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "강담당",
+      managerPhone: "042-6789-0123",
+      installDate: "2023.08.20",
+      lastMaintenance: "2024.01.15",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-7777-9999",
+          rentTime: "2024.01.16 18:00",
+        },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        { id: "006", name: "006_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "042-6789-0123",
+    },
+    {
+      id: 7,
+      name: "Go Together7", // 케어박스7 → Go Together7
+      location: "울산시 메가박스",
+      rentedCount: 3,
+      totalCount: 9,
+      arGlasses: { rented: 2, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "윤시설",
+      managerPhone: "052-7890-1234",
+      installDate: "2023.09.10",
+      lastMaintenance: "2024.01.11",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-8888-0000",
+          rentTime: "2024.01.16 15:30",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-9999-1111",
+          rentTime: "2024.01.16 16:45",
+        },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-0000-2222",
+          rentTime: "2024.01.16 17:20",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "052-7890-1234",
+    },
+    {
+      id: 8,
+      name: "Go Together8", // 케어박스8 → Go Together8
+      location: "수원시 CGV",
+      rentedCount: 7,
+      totalCount: 9,
+      arGlasses: { rented: 5, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "error",
+      manager: "임운영",
+      managerPhone: "031-8901-2345",
+      installDate: "2023.10.05",
+      lastMaintenance: "2024.01.02",
+      notes: "AR글라스 재고 부족, 긴급 보충 필요",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1111-4444",
+          rentTime: "2024.01.16 08:30",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-2222-5555",
+          rentTime: "2024.01.16 09:15",
+        },
+        {
+          id: "003",
+          name: "003_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-3333-6666",
+          rentTime: "2024.01.16 10:00",
+        },
+        {
+          id: "004",
+          name: "004_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-4444-7777",
+          rentTime: "2024.01.16 11:30",
+        },
+        {
+          id: "005",
+          name: "005_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-5555-8888",
+          rentTime: "2024.01.16 12:45",
+        },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-6666-9999",
+          rentTime: "2024.01.16 13:20",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-7777-0000",
+          rentTime: "2024.01.16 14:10",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "031-8901-2345",
+    },
+    {
+      id: 9,
+      name: "Go Together9", // 케어박스9 → Go Together9
+      location: "창원시 롯데시네마",
+      rentedCount: 2,
+      totalCount: 9,
+      arGlasses: { rented: 1, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "한관리",
+      managerPhone: "055-9012-3456",
+      installDate: "2023.11.12",
+      lastMaintenance: "2024.01.09",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-8888-1111",
+          rentTime: "2024.01.16 19:00",
+        },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-9999-2222",
+          rentTime: "2024.01.16 19:30",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "055-9012-3456",
+    },
+    {
+      id: 10,
+      name: "Go Together10", // 케어박스10 → Go Together10
+      location: "고양시 메가박스",
+      rentedCount: 4,
+      totalCount: 9,
+      arGlasses: { rented: 2, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "normal",
+      manager: "조담당",
+      managerPhone: "031-0123-4567",
+      installDate: "2023.12.01",
+      lastMaintenance: "2024.01.14",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-0000-3333",
+          rentTime: "2024.01.16 11:00",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-1111-4444",
+          rentTime: "2024.01.16 12:30",
+        },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-2222-5555",
+          rentTime: "2024.01.16 13:45",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-3333-6666",
+          rentTime: "2024.01.16 14:20",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "031-0123-4567",
+    },
+    {
+      id: 11,
+      name: "Go Together11", // 케어박스11 → Go Together11
+      location: "청주시 CGV",
+      rentedCount: 3,
+      totalCount: 9,
+      arGlasses: { rented: 2, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "신시설",
+      managerPhone: "043-1234-5678",
+      installDate: "2024.01.10",
+      lastMaintenance: "2024.01.10",
+      notes: "신규 설치, 정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-4444-7777",
+          rentTime: "2024.01.16 16:15",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-5555-8888",
+          rentTime: "2024.01.16 17:00",
+        },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-6666-9999",
+          rentTime: "2024.01.16 17:45",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "043-1234-5678",
+    },
+    {
+      id: 12,
+      name: "Go Together12", // 케어박스12 → Go Together12
+      location: "전주시 롯데시네마",
+      rentedCount: 5,
+      totalCount: 9,
+      arGlasses: { rented: 3, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "warning",
+      manager: "오운영",
+      managerPhone: "063-2345-6789",
+      installDate: "2023.05.25",
+      lastMaintenance: "2024.01.07",
+      notes: "대여율 높음, 기기 상태 점검 필요",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-7777-0000",
+          rentTime: "2024.01.16 10:30",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-8888-1111",
+          rentTime: "2024.01.16 11:45",
+        },
+        {
+          id: "003",
+          name: "003_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-9999-2222",
+          rentTime: "2024.01.16 13:20",
+        },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-0000-3333",
+          rentTime: "2024.01.16 14:15",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-1111-4444",
+          rentTime: "2024.01.16 15:30",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "063-2345-6789",
+    },
+    {
+      id: 13,
+      name: "Go Together13", // 케어박스13 → Go Together13
+      location: "포항시 메가박스",
+      rentedCount: 1,
+      totalCount: 9,
+      arGlasses: { rented: 0, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "류관리",
+      managerPhone: "054-3456-7890",
+      installDate: "2023.08.15",
+      lastMaintenance: "2024.01.13",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        { id: "001", name: "001_AR글라스", type: "AR글라스", status: "available" },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-2222-5555",
+          rentTime: "2024.01.16 18:30",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "054-3456-7890",
+    },
+    {
+      id: 14,
+      name: "Go Together14", // 케어박스14 → Go Together14
+      location: "제주시 CGV",
+      rentedCount: 6,
+      totalCount: 9,
+      arGlasses: { rented: 4, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 1, total: 2 },
+      status: "warning",
+      manager: "문담당",
+      managerPhone: "064-4567-8901",
+      installDate: "2023.09.30",
+      lastMaintenance: "2024.01.06",
+      notes: "관광지 특성상 대여율 높음",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-3333-6666",
+          rentTime: "2024.01.16 09:00",
+        },
+        {
+          id: "002",
+          name: "002_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-4444-7777",
+          rentTime: "2024.01.16 10:15",
+        },
+        {
+          id: "003",
+          name: "003_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-5555-8888",
+          rentTime: "2024.01.16 11:30",
+        },
+        {
+          id: "004",
+          name: "004_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-6666-9999",
+          rentTime: "2024.01.16 12:45",
+        },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-7777-0000",
+          rentTime: "2024.01.16 13:20",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        {
+          id: "008",
+          name: "008_스마트폰",
+          type: "스마트폰",
+          status: "rented",
+          renterPhone: "010-8888-1111",
+          rentTime: "2024.01.16 14:10",
+        },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "064-4567-8901",
+    },
+    {
+      id: 15,
+      name: "Go Together15", // 케어박스15 → Go Together15
+      location: "강릉시 롯데시네마",
+      rentedCount: 2,
+      totalCount: 9,
+      arGlasses: { rented: 1, total: 5 },
+      boneHeadphones: { rented: 1, total: 2 },
+      smartphones: { rented: 0, total: 2 },
+      status: "normal",
+      manager: "서시설",
+      managerPhone: "033-5678-9012",
+      installDate: "2023.10.20",
+      lastMaintenance: "2024.01.12",
+      notes: "정상 운영 중",
+      equipmentBoxes: [
+        {
+          id: "001",
+          name: "001_AR글라스",
+          type: "AR글라스",
+          status: "rented",
+          renterPhone: "010-9999-2222",
+          rentTime: "2024.01.16 20:00",
+        },
+        { id: "002", name: "002_AR글라스", type: "AR글라스", status: "available" },
+        { id: "003", name: "003_AR글라스", type: "AR글라스", status: "available" },
+        { id: "004", name: "004_AR글라스", type: "AR글라스", status: "available" },
+        { id: "005", name: "005_AR글라스", type: "AR글라스", status: "available" },
+        {
+          id: "006",
+          name: "006_골전도이어폰",
+          type: "골전도이어폰",
+          status: "rented",
+          renterPhone: "010-0000-3333",
+          rentTime: "2024.01.16 20:30",
+        },
+        { id: "007", name: "007_골전도이어폰", type: "골전도이어폰", status: "available" },
+        { id: "008", name: "008_스마트폰", type: "스마트폰", status: "available" },
+        { id: "009", name: "009_스마트폰", type: "스마트폰", status: "available" },
+      ],
+      contact: "033-5678-9012",
+    },
+  ]
+
+  const togglePhoneVisibility = () => {
+    setShowPhoneNumbers(!showPhoneNumbers)
+  }
+
+  const formatPhoneNumber = (phone: string, show: boolean) => {
+    if (show) return phone
+    return phone.replace(/(\d{3})-(\d{4})-(\d{4})/, "$1-****-****")
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "normal":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "warning":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "error":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const handleCareBoxDetail = (careBoxId: number) => {
+    setSelectedCareBox(careBoxId)
+  }
+
+  const handleBackToList = () => {
+    setSelectedCareBox(null)
+  }
+
+  const handleRemoteOpen = (careBoxId: number) => {
+    alert(`Go Together${careBoxId} 투입구를 원격으로 열었습니다.`) // 케어박스 → Go Together
+  }
+
+  const getEquipmentStatusColor = (status: string) => {
+    switch (status) {
+      case "available":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "rented":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "broken":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const getEquipmentStatusText = (status: string) => {
+    switch (status) {
+      case "available":
+        return "대여가능"
+      case "rented":
+        return "대여중"
+      case "broken":
+        return "고장"
+      default:
+        return "알 수 없음"
+    }
+  }
+
+  const getFilteredOverdueRentals = () => {
+    let filtered = overdueRentals
+
+    switch (overdueFilter) {
+      case "24h":
+        filtered = filtered.filter((rental) => rental.hoursOverdue >= 24 && rental.hoursOverdue < 48)
+        break
+      case "48h":
+        filtered = filtered.filter((rental) => rental.hoursOverdue >= 48 && rental.hoursOverdue < 72)
+        break
+      case "72h":
+        filtered = filtered.filter((rental) => rental.hoursOverdue >= 72)
+        break
+      default:
+        break
+    }
+
+    switch (overdueSortBy) {
+      case "time":
+        filtered.sort((a, b) => b.hoursOverdue - a.hoursOverdue)
+        break
+      case "location":
+        filtered.sort((a, b) => a.careBoxLocation.localeCompare(b.careBoxLocation))
+        break
+      case "equipment":
+        filtered.sort((a, b) => a.equipmentType.localeCompare(b.equipmentType))
+        break
+      default:
+        break
+    }
+
+    return filtered
+  }
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case "warning":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "critical":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "urgent":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const getSeverityText = (severity: string) => {
+    switch (severity) {
+      case "warning":
+        return "주의"
+      case "critical":
+        return "심각"
+      case "urgent":
+        return "긴급"
+      default:
+        return "알 수 없음"
+    }
+  }
+
+  const handleContactRenter = (phone: string, method: "call" | "sms") => {
+    if (method === "call") {
+      alert(`${formatPhoneNumber(phone, true)}로 전화를 겁니다.`)
+    } else {
+      alert(`${formatPhoneNumber(phone, true)}로 SMS를 발송합니다.`)
+    }
+  }
+
+  const handleForceReturn = (rentalId: string, equipmentName: string) => {
+    if (confirm(`${equipmentName}을(를) 강제 반납 처리하시겠습니까?`)) {
+      alert(`${equipmentName}이(가) 강제 반납 처리되었습니다.`)
+    }
+  }
+
+  // Added facility management functions
+  const generateCredentials = () => {
+    const username = String(facilityManagers.length + 1).padStart(3, "0")
+    const password = Math.floor(100000 + Math.random() * 900000).toString()
+    return { username, password }
+  }
+
+  const handleAddFacility = () => {
+    if (!newFacility.facilityName || !newFacility.managerPhone) {
+      alert("시설명과 담당자 전화번호를 입력해주세요.")
+      return
+    }
+
+    const credentials = generateCredentials()
+    const facility: FacilityManager = {
+      id: Date.now().toString(),
+      username: credentials.username,
+      password: credentials.password,
+      facilityName: newFacility.facilityName,
+      managerPhone: newFacility.managerPhone,
+      createdDate: new Date().toLocaleDateString("ko-KR").replace(/\./g, ".").slice(0, -1),
+      status: "active",
+    }
+
+    setFacilityManagers([...facilityManagers, facility])
+    setNewFacility({ facilityName: "", managerPhone: "" })
+    setShowAddFacilityModal(false)
+    alert(`새 시설이 추가되었습니다.\n아이디: ${credentials.username}\n비밀번호: ${credentials.password}`)
+  }
+
+  const handleEditFacility = (facility: FacilityManager) => {
+    setEditingFacility({ ...facility })
+  }
+
+  const handleUpdateFacility = () => {
+    if (!editingFacility) return
+
+    setFacilityManagers(facilityManagers.map((f) => (f.id === editingFacility.id ? editingFacility : f)))
+    setEditingFacility(null)
+    alert("시설 정보가 수정되었습니다.")
+  }
+
+  const handleDeleteFacility = (facilityId: string, facilityName: string) => {
+    if (confirm(`${facilityName}을(를) 삭제하시겠습니까?`)) {
+      setFacilityManagers(facilityManagers.filter((f) => f.id !== facilityId))
+      alert("시설이 삭제되었습니다.")
+    }
+  }
+
+  const handleToggleFacilityStatus = (facilityId: string) => {
+    setFacilityManagers(
+      facilityManagers.map((f) =>
+        f.id === facilityId ? { ...f, status: f.status === "active" ? "inactive" : "active" } : f,
+      ),
+    )
+  }
+
+  const getFilteredFacilities = () => {
+    let filtered = facilityManagers
+
+    if (facilitySearchTerm) {
+      filtered = filtered.filter(
+        (f) =>
+          f.facilityName.toLowerCase().includes(facilitySearchTerm.toLowerCase()) ||
+          f.username.includes(facilitySearchTerm) ||
+          f.managerPhone.includes(facilitySearchTerm),
+      )
+    }
+
+    if (facilityStatusFilter !== "all") {
+      filtered = filtered.filter((f) => f.status === facilityStatusFilter)
+    }
+
+    return filtered
+  }
+
+  const filteredOverdueRentals =
+    selectedOverdueCareBox === "all"
+      ? overdueRentals
+      : overdueRentals.filter((rental) => rental.careBoxName === `Go Together${selectedOverdueCareBox}`) // 케어박스 → Go Together
+
+  const handleContact = (phone: string, method: "call" | "sms") => {
+    if (method === "call") {
+      alert(`${formatPhoneNumber(phone, true)}로 전화를 겁니다.`)
+    } else {
+      alert(`${formatPhoneNumber(phone, true)}로 SMS를 발송합니다.`)
+    }
+  }
+
+  const [historyStartDate, setHistoryStartDate] = useState(
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  )
+  const [historyEndDate, setHistoryEndDate] = useState(new Date().toISOString().split("T")[0])
+  const [showEquipmentDetail, setShowEquipmentDetail] = useState(false)
+  const [selectedEquipment, setSelectedEquipment] = useState<string>("")
+  const [showEquipmentPhoneNumbers, setShowEquipmentPhoneNumbers] = useState(false)
+  const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false)
+  const [equipmentDetailStartDate, setEquipmentDetailStartDate] = useState(
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  )
+  const [equipmentDetailEndDate, setEquipmentDetailEndDate] = useState(new Date().toISOString().split("T")[0])
+
+  const handleEquipmentDetail = (equipmentName: string) => {
+    setSelectedEquipmentName(equipmentName)
+    setShowEquipmentDetailPage(true)
+  }
+
+  const handleBackFromEquipmentDetail = () => {
+    setShowEquipmentDetailPage(false)
+    setSelectedEquipmentName("")
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* 헤더 */}
+      <header className="bg-white border-b-2 border-gray-200 px-8 py-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">가치봄플러스 Go Together 관리자 시스템</h1>
+          <p className="text-xl text-gray-600">한국시각장애인연합회 | 전국 15개 영화관 Go Together 관리</p>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <nav className="mb-8">
+          <div className="flex flex-wrap gap-4">
+            <Button
+              onClick={() => setCurrentView("status")}
+              variant={currentView === "status" ? "default" : "outline"}
+              size="lg"
+              className="text-lg px-8 py-4 h-auto"
+            >
+              <Package className="mr-3 h-6 w-6" />
+              Go Together 관리
+            </Button>
+            <Button
+              onClick={() => setCurrentView("realtime")}
+              variant={currentView === "realtime" ? "default" : "outline"}
+              size="lg"
+              className="text-lg px-8 py-4 h-auto"
+            >
+              <Monitor className="mr-3 h-6 w-6" />
+              Go Together 실시간 대여현황
+            </Button>
+            <Button
+              onClick={() => setCurrentView("overdue")}
+              variant={currentView === "overdue" ? "default" : "outline"}
+              size="lg"
+              className="text-lg px-8 py-4 h-auto"
+            >
+              <Clock className="mr-3 h-6 w-6" />
+              Go Together 장기 미반납자
+            </Button>
+            <Button
+              onClick={() => setCurrentView("facility")}
+              variant={currentView === "facility" ? "default" : "outline"}
+              size="lg"
+              className="text-lg px-8 py-4 h-auto"
+            >
+              <Settings className="mr-3 h-6 w-6" />
+              시설관리
+            </Button>
+          </div>
+        </nav>
+
+        {/* Go Together 관리 뷰 */}
+        {currentView === "status" && !selectedCareBox && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Go Together 관리</h2>
+              <div className="text-lg text-gray-600">
+                총 15개의 Go Together • {new Date().toLocaleDateString("ko-KR")} 기준{" "}
+                {/* 총 15개 케어박스 → 총 15개의 Go Together */}
+              </div>
+            </div>
+
+            {/* Go Together 목록 테이블 */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-xl">Go Together 대여가능 기기 수 </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">번호</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">이름</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">설치장소</th>
+
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">AR글라스</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">골전도이어폰</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">스마트폰</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y">
+                      {careBoxes.map((careBox) => (
+                        <tr
+                          key={careBox.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleCareBoxDetail(careBox.id)}
+                        >
+                          <td className="px-6 py-6 text-lg font-semibold">{careBox.id}</td>
+                          <td className="px-6 py-6 text-lg font-medium">{careBox.name}</td>
+                          <td className="px-6 py-6 text-lg">{careBox.location}</td>
+
+                          <td className="px-6 py-6 text-lg text-center font-medium">
+                            {careBox.arGlasses.total - careBox.arGlasses.rented}개
+                          </td>
+                          <td className="px-6 py-6 text-lg text-center font-medium">
+                            {careBox.boneHeadphones.total - careBox.boneHeadphones.rented}개
+                          </td>
+                          <td className="px-6 py-6 text-lg text-center font-medium">
+                            {careBox.smartphones.total - careBox.smartphones.rented}개
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {currentView === "status" && selectedCareBox && !showEquipmentDetailPage && (
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleBackToList}
+                variant="outline"
+                size="lg"
+                className="text-lg px-6 py-3 bg-transparent"
+              >
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                목록으로
+              </Button>
+              <h2 className="text-2xl font-bold">Go Together{selectedCareBox} 상세정보</h2>{" "}
+              {/* 케어박스 → Go Together */}
+            </div>
+
+            <div className="flex gap-2 border-b">
+              <Button
+                onClick={() => setCareBoxDetailTab("usage")}
+                variant={careBoxDetailTab === "usage" ? "default" : "ghost"}
+                size="lg"
+                className="text-lg px-6 py-3 rounded-b-none"
+              >
+                <History className="mr-2 h-5 w-5" />
+                Go Together 사용내역 조회
+              </Button>
+              <Button
+                onClick={() => setCareBoxDetailTab("info")}
+                variant={careBoxDetailTab === "info" ? "default" : "ghost"}
+                size="lg"
+                className="text-lg px-6 py-3 rounded-b-none"
+              >
+                <Info className="mr-2 h-5 w-5" />
+                Go Together 상세정보
+              </Button>
+            </div>
+
+            {careBoxDetailTab === "usage" && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">Go Together 사용내역 조회</h3>
+                  <Dialog open={showAddEquipmentModal} onOpenChange={setShowAddEquipmentModal}>
+                    <DialogTrigger asChild>
+                      <Button size="lg" className="text-lg px-6 py-3 bg-green-600 hover:bg-green-700">
+                        <Plus className="mr-2 h-5 w-5" />
+                        신규장비 등록
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl">신규 장비 등록</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6 py-4">
+                        <div className="grid grid-cols-1 gap-6">
+                          <div>
+                            <Label htmlFor="equipmentName" className="text-lg font-semibold">
+                              장비 이름
+                            </Label>
+                            <Input
+                              id="equipmentName"
+                              value={newFacility.facilityName} // Placeholder, should be a new state for equipment name
+                              onChange={(e) => setNewFacility({ ...newFacility, facilityName: e.target.value })} // Placeholder, should be a new state for equipment name
+                              className="text-lg py-3 mt-2"
+                              placeholder="예: 010_AR글라스"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="equipmentType" className="text-lg font-semibold">
+                              장비 종류
+                            </Label>
+                            <Select>
+                              <SelectTrigger className="w-full text-lg py-3 mt-2">
+                                <SelectValue placeholder="종류 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="AR글라스">AR글라스</SelectItem>
+                                <SelectItem value="골전도이어폰">골전도이어폰</SelectItem>
+                                <SelectItem value="스마트폰">스마트폰</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-4">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowAddEquipmentModal(false)}
+                            size="lg"
+                            className="text-lg px-6 py-3 bg-transparent"
+                          >
+                            취소
+                          </Button>
+                          <Button size="lg" className="text-lg px-6 py-3">
+                            등록
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Go Together{selectedCareBox} 장비 목록</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b-2">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">장비 ID</th>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">장비 이름</th>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">상태</th>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">대여 시간</th>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">반납 시간</th>
+                            <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">임차인 연락처</th>
+                            <th className="px-6 py-4 text-right text-lg font-semibold text-gray-900"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {detailedCareBoxes
+                            .find((cb) => cb.id === selectedCareBox)
+                            ?.equipmentBoxes.map((eq) => (
+                              <tr key={eq.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-6 text-lg">{eq.id}</td>
+                                <td className="px-6 py-6 text-lg font-medium">{eq.name}</td>
+                                <td className="px-6 py-6 text-lg">
+                                  <Badge className={`${getEquipmentStatusColor(eq.status)} badge-sm`}>
+                                    {getEquipmentStatusText(eq.status)}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-6 text-lg">{eq.rentTime || "-"}</td>
+                                <td className="px-6 py-6 text-lg">{eq.returnTime || "-"}</td>
+                                <td className="px-6 py-6 text-lg">
+                                  {eq.renterPhone ? formatPhoneNumber(eq.renterPhone, showPhoneNumbers) : "-"}
+                                </td>
+                                <td className="px-6 py-6 text-right">
+                                  <div className="flex justify-end items-center gap-2">
+                                    {eq.status === "rented" && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleForceReturn(eq.id, eq.name)}
+                                      >
+                                        강제 반납
+                                      </Button>
+                                    )}
+                                    {eq.renterPhone && (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="outline" size="sm" className="text-gray-700 bg-transparent">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => handleContact(eq.renterPhone!, "call")}>
+                                            <Phone className="mr-2 h-4 w-4" />
+                                            전화 ({formatPhoneNumber(eq.renterPhone, showPhoneNumbers)})
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleContact(eq.renterPhone!, "sms")}>
+                                            <MessageSquare className="mr-2 h-4 w-4" />
+                                            SMS ({formatPhoneNumber(eq.renterPhone, showPhoneNumbers)})
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {careBoxDetailTab === "info" && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold">Go Together 상세정보</h3>
+                <Card className="border-2">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">Go Together 이름</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.name : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">설치 장소</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.location : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">담당자</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.manager : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">담당자 연락처</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox
+                            ? formatPhoneNumber(
+                                detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.managerPhone || "",
+                                showPhoneNumbers,
+                              )
+                            : ""}
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={togglePhoneVisibility}
+                            className="ml-2 p-0 h-auto text-lg"
+                          >
+                            {showPhoneNumbers ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </Button>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">설치일</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox
+                            ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.installDate
+                            : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700 mb-2">최근 점검일</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox
+                            ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.lastMaintenance
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <p className="text-lg font-semibold text-gray-700 mb-2">비고</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedCareBox ? detailedCareBoxes.find((cb) => cb.id === selectedCareBox)?.notes : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => handleRemoteOpen(selectedCareBox!)}
+                    size="lg"
+                    className="text-lg px-6 py-3 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Unlock className="mr-2 h-5 w-5" />
+                    Go Together 원격 열기
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentView === "realtime" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Go Together 실시간 대여현황</h2>
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center gap-2">
+                <label className="text-lg font-medium">날짜:</label>
+                <Input
+                  type="date"
+                  value={equipmentDateFilter}
+                  onChange={(e) => setEquipmentDateFilter(e.target.value)}
+                  className="text-lg py-2 px-3"
+                />
+              </div>
+            </div>
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-xl">Go Together 실시간 대여 현황</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">번호</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">이름</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">설치장소</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">AR글라스</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">골전도이어폰</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">스마트폰</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">전체 상태</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {careBoxes.map((careBox) => {
+                        const isWarning = careBox.status === "warning"
+                        const isError = careBox.status === "error"
+                        return (
+                          <tr key={careBox.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-6 text-lg font-semibold">{careBox.id}</td>
+                            <td className="px-6 py-6 text-lg font-medium">{careBox.name}</td>
+                            <td className="px-6 py-6 text-lg">{careBox.location}</td>
+                            <td
+                              className={`px-6 py-6 text-lg text-center font-medium ${isWarning ? "text-yellow-600" : isError ? "text-red-600" : ""}`}
+                            >
+                              {careBox.arGlasses.rented} / {careBox.arGlasses.total}
+                            </td>
+                            <td
+                              className={`px-6 py-6 text-lg text-center font-medium ${isWarning ? "text-yellow-600" : isError ? "text-red-600" : ""}`}
+                            >
+                              {careBox.boneHeadphones.rented} / {careBox.boneHeadphones.total}
+                            </td>
+                            <td
+                              className={`px-6 py-6 text-lg text-center font-medium ${isWarning ? "text-yellow-600" : isError ? "text-red-600" : ""}`}
+                            >
+                              {careBox.smartphones.rented} / {careBox.smartphones.total}
+                            </td>
+                            <td className="px-6 py-6 text-center">
+                              <Badge className={`${getStatusColor(careBox.status)} badge-lg`}>
+                                {careBox.status === "normal" ? "정상" : careBox.status === "warning" ? "주의" : "오류"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {currentView === "overdue" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Go Together 장기 미반납자</h2>
+            <div className="flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <Select value={selectedOverdueCareBox} onValueChange={setSelectedOverdueCareBox}>
+                  <SelectTrigger className="w-[200px] text-lg py-3">
+                    <SelectValue placeholder="모든 Go Together" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">모든 Go Together</SelectItem>
+                    {careBoxes.map((cb) => (
+                      <SelectItem key={cb.id} value={String(cb.id)}>
+                        {cb.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={overdueFilter} onValueChange={setOverdueFilter}>
+                  <SelectTrigger className="w-[150px] text-lg py-3">
+                    <SelectValue placeholder="필터" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="24h">24시간 초과</SelectItem>
+                    <SelectItem value="48h">48시간 초과</SelectItem>
+                    <SelectItem value="72h">72시간 초과</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Select value={overdueSortBy} onValueChange={setOverdueSortBy}>
+                  <SelectTrigger className="w-[150px] text-lg py-3">
+                    <SelectValue placeholder="정렬" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="time">시간 순</SelectItem>
+                    <SelectItem value="location">장소 순</SelectItem>
+                    <SelectItem value="equipment">장비 순</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-xl">장기 미반납 목록</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">No</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">Go Together 이름</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">설치장소</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">장비 이름</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">장비 종류</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">대여 시간</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">경과 시간 (시간)</th>
+                        <th className="px-6 py-4 text-center text-lg font-semibold text-gray-900">심각도</th>
+                        <th className="px-6 py-4 text-right text-lg font-semibold text-gray-900"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {getFilteredOverdueRentals().map((rental, index) => (
+                        <tr key={rental.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-6 text-lg font-semibold">{index + 1}</td>
+                          <td className="px-6 py-6 text-lg font-medium">{rental.careBoxName}</td>
+                          <td className="px-6 py-6 text-lg">{rental.careBoxLocation}</td>
+                          <td className="px-6 py-6 text-lg">{rental.equipmentName}</td>
+                          <td className="px-6 py-6 text-lg">{rental.equipmentType}</td>
+                          <td className="px-6 py-6 text-lg">{rental.rentTime}</td>
+                          <td className="px-6 py-6 text-center text-lg font-bold">{rental.hoursOverdue}</td>
+                          <td className="px-6 py-6 text-center">
+                            <Badge className={`${getSeverityColor(rental.severity)} badge-lg`}>
+                              {getSeverityText(rental.severity)}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-6 text-right">
+                            <div className="flex justify-end items-center gap-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-gray-700 bg-transparent">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleContactRenter(rental.renterPhone, "call")}>
+                                    <Phone className="mr-2 h-4 w-4" />
+                                    전화 ({formatPhoneNumber(rental.renterPhone, showPhoneNumbers)})
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleContactRenter(rental.renterPhone, "sms")}>
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    SMS ({formatPhoneNumber(rental.renterPhone, showPhoneNumbers)})
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleForceReturn(rental.id, rental.equipmentName)}>
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    강제 반납 처리
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {currentView === "facility" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">시설 관리</h2>
+            <div className="flex justify-between items-center">
+              <Dialog open={showAddFacilityModal} onOpenChange={setShowAddFacilityModal}>
+                <DialogTrigger asChild>
+                  <Button size="lg" className="text-lg px-6 py-3 bg-green-600 hover:bg-green-700">
+                    <Plus className="mr-2 h-5 w-5" />
+                    신규 시설 등록
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">신규 시설 등록</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <Label htmlFor="facilityName" className="text-lg font-semibold">
+                          시설명칭
+                        </Label>
+                        <Input
+                          id="facilityName"
+                          value={newFacility.facilityName}
+                          onChange={(e) => setNewFacility({ ...newFacility, facilityName: e.target.value })}
+                          className="text-lg py-3 mt-2"
+                          placeholder="예: 서울시각장애인복지관"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="managerPhone" className="text-lg font-semibold">
+                          담당자 전화번호
+                        </Label>
+                        <Input
+                          id="managerPhone"
+                          value={newFacility.managerPhone}
+                          onChange={(e) => setNewFacility({ ...newFacility, managerPhone: e.target.value })}
+                          className="text-lg py-3 mt-2"
+                          placeholder="예: 02-1234-5678"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAddFacilityModal(false)}
+                        size="lg"
+                        className="text-lg px-6 py-3 bg-transparent"
+                      >
+                        취소
+                      </Button>
+                      <Button onClick={handleAddFacility} size="lg" className="text-lg px-6 py-3">
+                        등록
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-4">
+                <Input
+                  type="text"
+                  placeholder="시설명, 아이디, 전화번호 검색"
+                  value={facilitySearchTerm}
+                  onChange={(e) => setFacilitySearchTerm(e.target.value)}
+                  className="text-lg py-3 px-4 w-96"
+                />
+                <Select value={facilityStatusFilter} onValueChange={setFacilityStatusFilter}>
+                  <SelectTrigger className="w-[150px] text-lg py-3">
+                    <SelectValue placeholder="상태 필터" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="active">활성</SelectItem>
+                    <SelectItem value="inactive">비활성</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-xl">시설 목록</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">No</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">시설명칭</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">아이디</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">담당자 전화번호</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">생성일</th>
+                        <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">상태</th>
+                        <th className="px-6 py-4 text-right text-lg font-semibold text-gray-900"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {getFilteredFacilities().map((facility, index) => (
+                        <tr key={facility.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-6 text-lg font-semibold">{index + 1}</td>
+                          <td className="px-6 py-6 text-lg font-medium">{facility.facilityName}</td>
+                          <td className="px-6 py-6 text-lg">{facility.username}</td>
+                          <td className="px-6 py-6 text-lg">
+                            {formatPhoneNumber(facility.managerPhone, showPhoneNumbers)}
+                          </td>
+                          <td className="px-6 py-6 text-lg">{facility.createdDate}</td>
+                          <td className="px-6 py-6 text-lg">
+                            <Badge
+                              className={
+                                facility.status === "active"
+                                  ? "bg-green-100 text-green-800 border-green-200 badge-lg"
+                                  : "bg-red-100 text-red-800 border-red-200 badge-lg"
+                              }
+                            >
+                              {facility.status === "active" ? "활성" : "비활성"}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-6 text-right">
+                            <div className="flex justify-end items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleEditFacility(facility)}>
+                                수정
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleFacilityStatus(facility.id)}
+                                className={
+                                  facility.status === "active"
+                                    ? "text-red-600 hover:text-red-700 border-red-200"
+                                    : "text-green-600 hover:text-green-700 border-green-200"
+                                }
+                              >
+                                {facility.status === "active" ? "비활성" : "활성"}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteFacility(facility.id, facility.facilityName)}
+                              >
+                                삭제
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Edit Facility Modal */}
+            <Dialog open={editingFacility !== null} onOpenChange={() => setEditingFacility(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl">시설 정보 수정</DialogTitle>
+                </DialogHeader>
+                {editingFacility && (
+                  <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <Label htmlFor="facilityName" className="text-lg font-semibold">
+                          시설명칭
+                        </Label>
+                        <Input
+                          id="facilityName"
+                          value={editingFacility.facilityName}
+                          onChange={(e) => setEditingFacility({ ...editingFacility, facilityName: e.target.value })}
+                          className="text-lg py-3 mt-2"
+                          placeholder="예: 서울시각장애인복지관"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="managerPhone" className="text-lg font-semibold">
+                          담당자 전화번호
+                        </Label>
+                        <Input
+                          id="managerPhone"
+                          value={editingFacility.managerPhone}
+                          onChange={(e) => setEditingFacility({ ...editingFacility, managerPhone: e.target.value })}
+                          className="text-lg py-3 mt-2"
+                          placeholder="예: 02-1234-5678"
+                        />
+                      </div>
+                      <div className="p-4 bg-blue-50 rounded-lg border">
+                        <div className="text-lg font-semibold text-blue-900 mb-2">로그인 정보</div>
+                        <div className="text-base text-blue-700">
+                          <div>아이디: {editingFacility.username}</div>
+                          <div>비밀번호: {showPhoneNumbers ? editingFacility.password : "******"}</div>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => setShowPhoneNumbers(!showPhoneNumbers)}
+                            className="p-0 h-auto"
+                          >
+                            비밀번호 {showPhoneNumbers ? "숨기기" : "보기"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingFacility(null)}
+                        size="lg"
+                        className="text-lg px-6 py-3 bg-transparent"
+                      >
+                        취소
+                      </Button>
+                      <Button onClick={handleUpdateFacility} size="lg" className="text-lg px-6 py-3">
+                        수정
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

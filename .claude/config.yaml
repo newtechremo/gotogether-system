@@ -1,0 +1,45 @@
+version: 1.0
+project:
+  name: "GoTogether System Development"
+  description: "가치봄플러스 통합 시스템 개발"
+  
+workspace:
+  backend_path: "./backend"
+  frontend_path: "./frontend"
+  docs_path: "./docs"
+  
+agents:
+  - name: "backend-dev"
+    prompt_file: "./agents/backend-dev.md"
+    scope: ["./backend", "./docs"]
+    
+  - name: "backend-review"
+    prompt_file: "./agents/backend-review.md"
+    scope: ["./backend"]
+    
+  - name: "backend-test"
+    prompt_file: "./agents/backend-test.md"
+    scope: ["./backend/test"]
+    
+  - name: "frontend-api"
+    prompt_file: "./agents/frontend-api.md"
+    scope: ["./frontend", "./docs/api.md"]
+    
+  - name: "frontend-review"
+    prompt_file: "./agents/frontend-review.md"
+    scope: ["./frontend"]
+    
+  - name: "frontend-test"
+    prompt_file: "./agents/frontend-test.md"
+    scope: ["./frontend", "./test/e2e"]
+    
+  - name: "project-manager"
+    prompt_file: "./agents/project-manager.md"
+    scope: ["./"]
+
+workflow:
+  phases:
+    - development
+    - review
+    - testing
+    - integration

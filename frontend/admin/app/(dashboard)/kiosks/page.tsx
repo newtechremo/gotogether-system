@@ -1,0 +1,597 @@
+"use client";
+
+import { useState } from "react";
+import {
+  useKiosks,
+  useKiosk,
+  useCreateKiosk,
+  useUpdateKiosk,
+  useDeleteKiosk,
+  useKioskExaminations,
+  useCreateExamination,
+  type Kiosk,
+  type KioskExamination,
+} from "@/lib/hooks/useKiosks";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { MapPin, Search, ChevronLeft, ChevronRight, Eye, Plus, ClipboardCheck } from "lucide-react";
+
+export default function KiosksPage() {
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isExaminationDialogOpen, setIsExaminationDialogOpen] = useState(false);
+  const [selectedKioskId, setSelectedKioskId] = useState<number | null>(null);
+
+  // 폼 상태
+  const [formData, setFormData] = useState({
+    name: "",
+    location: "",
+    managerName: "",
+    managerPhone: "",
+    installationDate: "",
+    status: "active" as "active" | "inactive" | "maintenance",
+    notes: "",
+  });
+
+  const [examinationFormData, setExaminationFormData] = useState({
+    examinationDate: new Date().toISOString().split("T")[0],
+    result: "pass" as "pass" | "fail" | "pending",
+    status: "normal" as "normal" | "warning" | "critical",
+    notes: "",
+  });
+
+  const { data: kiosksData, isLoading: kiosksLoading, refetch } = useKiosks(page, 10);
+  const { data: selectedKiosk } = useKiosk(selectedKioskId || 0);
+  const { data: examinations } = useKioskExaminations(selectedKioskId || 0);
+  const createKiosk = useCreateKiosk();
+  const updateKiosk = useUpdateKiosk();
+  const deleteKiosk = useDeleteKiosk();
+  const createExamination = useCreateExamination();
+
+  // 검색 필터 적용
+  const filteredKiosks = kiosksData?.items.filter((kiosk) => {
+    if (!searchTerm) return true;
+    return (
+      kiosk.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      kiosk.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      kiosk.managerName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // 상태별 뱃지 색상
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-100 text-green-800 border-green-300">운영중</Badge>;
+      case "inactive":
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-300">비활성</Badge>;
+      case "maintenance":
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">점검중</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  // 검점결과 뱃지
+  const getExaminationResultBadge = (result: string) => {
+    switch (result) {
+      case "pass":
+        return <Badge className="bg-green-100 text-green-800 border-green-300">통과</Badge>;
+      case "fail":
+        return <Badge className="bg-red-100 text-red-800 border-red-300">실패</Badge>;
+      case "pending":
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-300">대기</Badge>;
+      default:
+        return <Badge>{result}</Badge>;
+    }
+  };
+
+  // 키오스크 등록 핸들러
+  const handleCreateKiosk = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await createKiosk.mutateAsync(formData);
+      setIsCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        location: "",
+        managerName: "",
+        managerPhone: "",
+        installationDate: "",
+        status: "active",
+        notes: "",
+      });
+      refetch();
+      alert("키오스크 위치가 성공적으로 등록되었습니다");
+    } catch (error: any) {
+      alert(error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
+    }
+  };
+
+  // 점검 기록 추가
+  const handleCreateExamination = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedKioskId) return;
+
+    try {
+      await createExamination.mutateAsync({
+        kioskId: selectedKioskId,
+        ...examinationFormData,
+      });
+      setIsExaminationDialogOpen(false);
+      setExaminationFormData({
+        examinationDate: new Date().toISOString().split("T")[0],
+        result: "pass",
+        status: "normal",
+        notes: "",
+      });
+      alert("점검 기록이 성공적으로 추가되었습니다");
+    } catch (error: any) {
+      alert(error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
+    }
+  };
+
+  // 키오스크 상세 보기
+  const handleViewDetail = (kioskId: number) => {
+    setSelectedKioskId(kioskId);
+    setIsDetailDialogOpen(true);
+  };
+
+  // 키오스크 삭제
+  const handleDeleteKiosk = async (id: number, name: string) => {
+    if (!confirm(`정말 "${name}" 키오스크를 삭제하시겠습니까?`)) return;
+
+    try {
+      await deleteKiosk.mutateAsync(id);
+      refetch();
+      alert("키오스크가 성공적으로 삭제되었습니다");
+    } catch (error: any) {
+      alert(error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+    }
+  };
+
+  if (kiosksLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg font-medium">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 헤더 */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">키오스크 위치 관리</h2>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg" className="text-lg px-6 py-3 bg-black hover:bg-gray-800">
+              <Plus className="mr-2 h-5 w-5" />
+              신규 키오스크 등록
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">신규 키오스크 등록</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateKiosk} className="space-y-4">
+              <div>
+                <Label htmlFor="name">키오스크 이름 *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="예: CGV강남점"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="location">설치 장소 *</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="예: 서울 강남구 강남대로 438"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="managerName">담당자명</Label>
+                  <Input
+                    id="managerName"
+                    value={formData.managerName}
+                    onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
+                    placeholder="김영화"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="managerPhone">담당자 연락처</Label>
+                  <Input
+                    id="managerPhone"
+                    value={formData.managerPhone}
+                    onChange={(e) => setFormData({ ...formData, managerPhone: e.target.value })}
+                    placeholder="010-1234-5678"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="installationDate">설치일</Label>
+                  <Input
+                    id="installationDate"
+                    type="date"
+                    value={formData.installationDate}
+                    onChange={(e) => setFormData({ ...formData, installationDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status">상태</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">운영중</SelectItem>
+                      <SelectItem value="inactive">비활성</SelectItem>
+                      <SelectItem value="maintenance">점검중</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">비고</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="추가 정보 입력 (선택)"
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  취소
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createKiosk.isPending}
+                >
+                  {createKiosk.isPending ? "등록 중..." : "등록"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* 검색 */}
+      <div className="flex gap-4">
+        <Input
+          type="text"
+          placeholder="키오스크명, 위치, 담당자명 검색"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-md"
+        />
+        <Button onClick={() => refetch()}>
+          <Search className="mr-2 h-4 w-4" />
+          검색
+        </Button>
+      </div>
+
+      {/* 키오스크 목록 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>키오스크 위치 목록</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!filteredKiosks || filteredKiosks.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">등록된 키오스크가 없습니다.</div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">No</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">키오스크명</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">위치</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">담당자</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">연락처</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">상태</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredKiosks.map((kiosk, index) => (
+                      <tr key={kiosk.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm">
+                          {(page - 1) * 10 + index + 1}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">{kiosk.name}</td>
+                        <td className="px-6 py-4 text-sm">{kiosk.location}</td>
+                        <td className="px-6 py-4 text-sm">{kiosk.managerName || "-"}</td>
+                        <td className="px-6 py-4 text-sm">{kiosk.managerPhone || "-"}</td>
+                        <td className="px-6 py-4 text-sm">{getStatusBadge(kiosk.status)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetail(kiosk.id)}
+                            >
+                              상세
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteKiosk(kiosk.id, kiosk.name)}
+                            >
+                              삭제
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 페이지네이션 */}
+      {kiosksData && kiosksData.totalPages > 1 && (
+        <div className="flex justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+          >
+            이전
+          </Button>
+          <span className="py-2 px-4">
+            {page} / {kiosksData.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= kiosksData.totalPages}
+          >
+            다음
+          </Button>
+        </div>
+      )}
+
+      {/* 상세 보기 다이얼로그 */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">키오스크 상세 정보</DialogTitle>
+          </DialogHeader>
+          {selectedKiosk && (
+            <div className="space-y-6">
+              {/* 기본 정보 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-gray-600">키오스크 이름</Label>
+                  <p className="font-medium">{selectedKiosk.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-gray-600">상태</Label>
+                  <div>{getStatusBadge(selectedKiosk.status)}</div>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm text-gray-600">설치 장소</Label>
+                  <p className="font-medium">{selectedKiosk.location}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-gray-600">담당자</Label>
+                  <p className="font-medium">{selectedKiosk.managerName || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-gray-600">연락처</Label>
+                  <p className="font-medium">{selectedKiosk.managerPhone || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-gray-600">설치일</Label>
+                  <p className="font-medium">
+                    {selectedKiosk.installationDate
+                      ? new Date(selectedKiosk.installationDate).toLocaleDateString()
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-gray-600">등록 장비 수</Label>
+                  <p className="font-medium">{selectedKiosk.deviceCount || 0}대</p>
+                </div>
+                {selectedKiosk.notes && (
+                  <div className="col-span-2">
+                    <Label className="text-sm text-gray-600">비고</Label>
+                    <p className="font-medium">{selectedKiosk.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 점검 기록 */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">점검 기록</h3>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsExaminationDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    점검 추가
+                  </Button>
+                </div>
+
+                {examinations && examinations.length > 0 ? (
+                  <div className="space-y-2">
+                    {examinations.map((exam) => (
+                      <div key={exam.id} className="border p-3 rounded">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <ClipboardCheck className="h-4 w-4" />
+                            <span className="font-medium">
+                              {new Date(exam.examinationDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            {getExaminationResultBadge(exam.result)}
+                            <Badge
+                              className={
+                                exam.status === "critical"
+                                  ? "bg-red-100 text-red-800"
+                                  : exam.status === "warning"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-green-100 text-green-800"
+                              }
+                            >
+                              {exam.status === "critical"
+                                ? "긴급"
+                                : exam.status === "warning"
+                                ? "주의"
+                                : "정상"}
+                            </Badge>
+                          </div>
+                        </div>
+                        {exam.notes && <p className="text-sm text-gray-600">{exam.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border border-dashed border-gray-300 rounded">
+                    <ClipboardCheck className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-gray-600 text-sm">점검 기록이 없습니다</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 점검 기록 추가 다이얼로그 */}
+      <Dialog open={isExaminationDialogOpen} onOpenChange={setIsExaminationDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">점검 기록 추가</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateExamination} className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="examinationDate">점검 일자 *</Label>
+              <Input
+                id="examinationDate"
+                type="date"
+                value={examinationFormData.examinationDate}
+                onChange={(e) =>
+                  setExaminationFormData({ ...examinationFormData, examinationDate: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="result">점검 결과 *</Label>
+                <Select
+                  value={examinationFormData.result}
+                  onValueChange={(value: any) =>
+                    setExaminationFormData({ ...examinationFormData, result: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pass">통과</SelectItem>
+                    <SelectItem value="fail">실패</SelectItem>
+                    <SelectItem value="pending">대기</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="examinationStatus">점검 상태 *</Label>
+                <Select
+                  value={examinationFormData.status}
+                  onValueChange={(value: any) =>
+                    setExaminationFormData({ ...examinationFormData, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">정상</SelectItem>
+                    <SelectItem value="warning">주의</SelectItem>
+                    <SelectItem value="critical">긴급</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="examinationNotes">비고</Label>
+              <Textarea
+                id="examinationNotes"
+                value={examinationFormData.notes}
+                onChange={(e) =>
+                  setExaminationFormData({ ...examinationFormData, notes: e.target.value })
+                }
+                placeholder="점검 내용 및 특이사항 입력"
+                className="resize-none"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsExaminationDialogOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                disabled={createExamination.isPending}
+              >
+                {createExamination.isPending ? "추가 중..." : "추가"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
