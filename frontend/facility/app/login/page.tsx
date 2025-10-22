@@ -22,14 +22,27 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function FacilityLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [adminUrl, setAdminUrl] = useState("");
   const { mutate: login, isPending } = useLogin();
 
-  // 컴포넌트 마운트 시 기존 인증 정보 정리
+  // 컴포넌트 마운트 시 기존 인증 정보 정리 및 관리자 URL 설정
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('facility_token');
       localStorage.removeItem('facility_user');
       document.cookie = 'facility_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+
+      // 현재 호스트 기반으로 관리자 시스템 URL 생성
+      const currentHost = window.location.hostname;
+      const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(currentHost);
+
+      if (isIP) {
+        // IP 주소인 경우 포트 5174 사용
+        setAdminUrl(`http://${currentHost}:5174/login`);
+      } else {
+        // 도메인인 경우 도메인 사용
+        setAdminUrl(`${window.location.protocol}//admin.${currentHost}/login`);
+      }
     }
   }, []);
 
@@ -46,8 +59,9 @@ export default function FacilityLoginPage() {
   };
 
   const handleAdminSystem = () => {
-    // 최고관리자시스템 연결 (향후 구현)
-    window.open("http://localhost:5174/login", "_blank");
+    if (adminUrl) {
+      window.open(adminUrl, "_blank");
+    }
   };
 
   return (
