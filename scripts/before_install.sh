@@ -7,10 +7,8 @@ mkdir -p /home/ec2-user/logs
 mkdir -p /var/www/gotogether-admin
 mkdir -p /var/www/gotogether-facility
 
-# Clean up old node_modules (optional, saves disk space)
-echo "Cleaning up old node_modules..."
-rm -rf /home/ec2-user/gotogether-system/backend/node_modules 2>/dev/null || true
-rm -rf /home/ec2-user/gotogether-system/frontend/admin/node_modules 2>/dev/null || true
-rm -rf /home/ec2-user/gotogether-system/frontend/facility/node_modules 2>/dev/null || true
+# DON'T delete anything - CodeDeploy will overwrite files anyway
+# Removing node_modules and dist can cause issues
+echo "Skipping cleanup - CodeDeploy will handle file replacement"
 
 echo "Preparation complete!"
