@@ -65,7 +65,9 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(aws ec2 describe-instances:*)",
+      "Bash(aws ec2 describe-iam-instance-profile-associations:*)"
     ],
     "deny": [],
     "ask": []
