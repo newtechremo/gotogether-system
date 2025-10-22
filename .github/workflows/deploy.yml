@@ -8,6 +8,7 @@ env:
   AWS_REGION: ap-northeast-2
   APPLICATION_NAME: gotogether-app
   DEPLOYMENT_GROUP: gotogether-production
+  S3_BUCKET: gotogether-private
 
 jobs:
   deploy:
@@ -29,21 +30,37 @@ jobs:
 
     - name: Upload to S3
       run: |
-        BUCKET_NAME="gotogether-deployments-$(date +%s)"
-        aws s3 mb s3://$BUCKET_NAME
-        aws s3 cp deployment.zip s3://$BUCKET_NAME/
-        echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+        DEPLOYMENT_KEY="deployments/${TIMESTAMP}-${COMMIT_SHA}/deployment.zip"
+
+        echo "Uploading to s3://${{ env.S3_BUCKET }}/${DEPLOYMENT_KEY}"
+        aws s3 cp deployment.zip s3://${{ env.S3_BUCKET }}/${DEPLOYMENT_KEY}
+
+        echo "DEPLOYMENT_KEY=$DEPLOYMENT_KEY" >> $GITHUB_ENV
 
     - name: Create CodeDeploy Deployment
       run: |
         DEPLOYMENT_ID=$(aws deploy create-deployment \
           --application-name ${{ env.APPLICATION_NAME }} \
           --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
-          --s3-location bucket=${{ env.BUCKET_NAME }},key=deployment.zip,bundleType=zip \
+          --s3-location bucket=${{ env.S3_BUCKET }},key=${{ env.DEPLOYMENT_KEY }},bundleType=zip \
+          --description "Deploy ${GITHUB_SHA:0:7} by ${GITHUB_ACTOR}" \
           --query 'deploymentId' \
           --output text)
 
         echo "Deployment ID: $DEPLOYMENT_ID"
+        echo "S3 Location: s3://${{ env.S3_BUCKET }}/${{ env.DEPLOYMENT_KEY }}"
 
         # 배포 상태 확인
         aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID
+
+    - name: Cleanup old deployments
+      if: success()
+      run: |
+        echo "Cleaning up old deployment files (keeping last 10)..."
+        aws s3 ls s3://${{ env.S3_BUCKET }}/deployments/ | \
+          sort -r | \
+          tail -n +11 | \
+          awk '{print $4}' | \
+          xargs -I {} aws s3 rm s3://${{ env.S3_BUCKET }}/deployments/{} --recursive || echo "No old deployments to clean"
