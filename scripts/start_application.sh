@@ -39,9 +39,18 @@ echo "PM2 version: $(pm2 --version)"
 echo "Starting backend application..."
 cd /home/ec2-user/gotogether-system/backend
 
-# Check if dist/main.js exists
-if [ ! -f "dist/main.js" ]; then
-    log_error "dist/main.js not found! Build may have failed."
+# Check if built files exist (NestJS outputs to dist/src/ by default)
+if [ -f "dist/src/main.js" ]; then
+    MAIN_FILE="dist/src/main.js"
+    echo "Found main.js at dist/src/main.js"
+elif [ -f "dist/main.js" ]; then
+    MAIN_FILE="dist/main.js"
+    echo "Found main.js at dist/main.js"
+else
+    log_error "main.js not found in dist/ or dist/src/! Build may have failed."
+    echo "Checking dist directory contents:"
+    ls -la dist/
+    [ -d "dist/src" ] && ls -la dist/src/
     exit 1
 fi
 
@@ -49,7 +58,7 @@ fi
 pm2 delete gotogether-backend 2>/dev/null || echo "No existing process to delete"
 
 # Start the application with PM2
-pm2 start dist/main.js \
+pm2 start $MAIN_FILE \
     --name gotogether-backend \
     --max-memory-restart 800M \
     --log /home/ec2-user/logs/gotogether-backend.log \
