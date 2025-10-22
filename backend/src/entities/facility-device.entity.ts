@@ -51,9 +51,11 @@ export class FacilityDevice {
   @JoinColumn({ name: 'facility_id' })
   facility: Facility;
 
-  @OneToMany(
-    () => FacilityDeviceItem,
-    (deviceItem) => deviceItem.facilityDevice,
-  )
-  deviceItems: FacilityDeviceItem[];
+  // Note: facility_device_items now directly references facilities, not facility_devices
+  // This relationship is kept for backward compatibility but may not be used
+  // @OneToMany(
+  //   () => FacilityDeviceItem,
+  //   (deviceItem) => deviceItem.facilityDevice,
+  // )
+  // deviceItems: FacilityDeviceItem[];
 }

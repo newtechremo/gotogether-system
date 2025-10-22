@@ -4,7 +4,6 @@ import {
   repairService,
   CreateFacilityRepairDto,
   UpdateFacilityRepairDto,
-  CompleteRepairDto,
   RepairListQuery,
 } from '../api/repair.service';
 
@@ -92,34 +91,14 @@ export function useUpdateRepair() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.repairs });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.repair(variables.id) });
-      toast.success('수리 정보가 수정되었습니다.');
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '수리 수정에 실패했습니다.');
-    },
-  });
-}
-
-/**
- * Complete repair
- */
-export function useCompleteRepair() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CompleteRepairDto }) =>
-      repairService.completeRepair(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.repairs });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.repair(variables.id) });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.inProgressRepairs });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.completedRepairs });
       queryClient.invalidateQueries({ queryKey: ['devices'] });
       queryClient.invalidateQueries({ queryKey: ['statistics'] });
-      toast.success('수리 완료 처리되었습니다.');
+      toast.success('수리 정보가 수정되었습니다.');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || '수리 완료 처리에 실패했습니다.');
+      toast.error(error.response?.data?.message || '수리 수정에 실패했습니다.');
     },
   });
 }

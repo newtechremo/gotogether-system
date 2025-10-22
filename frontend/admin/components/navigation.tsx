@@ -51,7 +51,7 @@ export function Navigation() {
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1" />
             <h1 className="text-3xl font-bold text-black flex-1 text-center whitespace-nowrap">
-              가치봄플러스 Go Together 관리자 시스템
+              가치봄 플러스 Go Together 관리자 시스템
             </h1>
             <div className="flex-1 flex justify-end items-center gap-4">
               {userData && (
@@ -59,11 +59,6 @@ export function Navigation() {
                   <span className="text-sm font-medium text-gray-700">
                     {userData.name}
                   </span>
-                  {userData.role && (
-                    <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                      {userData.role === 'super_admin' ? '최고관리자' : '관리자'}
-                    </span>
-                  )}
                 </div>
               )}
               <Button

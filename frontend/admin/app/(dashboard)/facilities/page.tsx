@@ -93,10 +93,9 @@ function FacilitiesContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">시설 관리</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-black">시설 관리</h1>
 
           <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
             <DialogTrigger asChild>
@@ -110,7 +109,7 @@ function FacilitiesContent() {
                 <DialogTitle className="text-2xl">신규 시설 등록</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="facilityCode">시설 코드</Label>
                   <Input
                     id="facilityCode"
@@ -119,7 +118,7 @@ function FacilitiesContent() {
                     placeholder="예: FAC001"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="facilityName">시설명</Label>
                   <Input
                     id="facilityName"
@@ -128,7 +127,7 @@ function FacilitiesContent() {
                     placeholder="예: 서울시각장애인복지관"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="username">로그인 아이디</Label>
                   <Input
                     id="username"
@@ -137,7 +136,7 @@ function FacilitiesContent() {
                     placeholder="예: facility001"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="password">비밀번호</Label>
                   <Input
                     id="password"
@@ -147,7 +146,7 @@ function FacilitiesContent() {
                     placeholder="최소 6자 이상"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="managerName">담당자명</Label>
                   <Input
                     id="managerName"
@@ -156,7 +155,7 @@ function FacilitiesContent() {
                     placeholder="예: 김철수"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="managerPhone">담당자 연락처</Label>
                   <Input
                     id="managerPhone"
@@ -165,7 +164,7 @@ function FacilitiesContent() {
                     placeholder="예: 010-1234-5678"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="address">주소</Label>
                   <Input
                     id="address"
@@ -194,85 +193,99 @@ function FacilitiesContent() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            className="max-w-md"
+            className="max-w-md text-base"
           />
-          <Button onClick={handleSearch}>
+          <Button onClick={handleSearch} className="text-base">
             <Search className="mr-2 h-4 w-4" />
             검색
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>시설 목록</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-8 text-center text-gray-500">로딩 중...</div>
-            ) : !facilitiesData?.data?.items?.length ? (
-              <div className="p-8 text-center text-gray-500">등록된 시설이 없습니다.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">No</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">시설코드</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">시설명</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">아이디</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">담당자</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">연락처</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">상태</th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
+        {isLoading ? (
+          <Card className="border-2 border-black bg-white">
+            <div className="p-12 text-center text-gray-500">
+              <p className="text-lg">로딩 중...</p>
+            </div>
+          </Card>
+        ) : !facilitiesData?.data?.items?.length ? (
+          <Card className="border-2 border-black bg-white">
+            <div className="p-12 text-center text-gray-500">
+              <p className="text-lg">등록된 시설이 없습니다.</p>
+            </div>
+          </Card>
+        ) : (
+          <Card className="border-2 border-black bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '5%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '30%' }} />
+                </colgroup>
+                <thead>
+                  <tr className="border-b-2 border-black">
+                    <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">시설코드</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">시설명</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">아이디</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
+                    <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {facilitiesData.data.items.map((facility, index) => (
+                    <tr key={facility.id} className="hover:bg-gray-50">
+                      <td className="p-6 text-base truncate">
+                        {(facilitiesData.data.page - 1) * facilitiesData.data.limit + index + 1}
+                      </td>
+                      <td className="p-6 text-base font-medium truncate" title={facility.facilityCode}>{facility.facilityCode}</td>
+                      <td className="p-6 text-base font-medium truncate" title={facility.facilityName}>{facility.facilityName}</td>
+                      <td className="p-6 text-base truncate" title={facility.username}>{facility.username}</td>
+                      <td className="p-6 text-base truncate" title={facility.managerName || "-"}>{facility.managerName || "-"}</td>
+                      <td className="p-6 text-base truncate" title={facility.managerPhone || "-"}>{facility.managerPhone || "-"}</td>
+                      <td className="p-6 text-base">
+                        <Badge className={facility.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                          {facility.isActive ? "활성" : "비활성"}
+                        </Badge>
+                      </td>
+                      <td className="p-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingFacility(facility)} className="text-base">
+                            수정
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setResettingPasswordFacility(facility)}
+                            className="text-blue-600 hover:text-blue-700 text-base"
+                          >
+                            <KeyRound className="h-4 w-4 mr-1" />
+                            비밀번호 재설정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteFacility(facility.id, facility.facilityName)}
+                            className="text-base"
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {facilitiesData.data.items.map((facility, index) => (
-                      <tr key={facility.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm">
-                          {(facilitiesData.data.page - 1) * facilitiesData.data.limit + index + 1}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">{facility.facilityCode}</td>
-                        <td className="px-6 py-4 text-sm font-medium">{facility.facilityName}</td>
-                        <td className="px-6 py-4 text-sm">{facility.username}</td>
-                        <td className="px-6 py-4 text-sm">{facility.managerName || "-"}</td>
-                        <td className="px-6 py-4 text-sm">{facility.managerPhone || "-"}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <Badge className={facility.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                            {facility.isActive ? "활성" : "비활성"}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setEditingFacility(facility)}>
-                              수정
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setResettingPasswordFacility(facility)}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <KeyRound className="h-4 w-4 mr-1" />
-                              비밀번호 재설정
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteFacility(facility.id, facility.facilityName)}
-                            >
-                              삭제
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
         {facilitiesData?.data && facilitiesData.data.totalPages > 1 && (
           <div className="flex justify-center gap-2">
@@ -307,7 +320,7 @@ function FacilitiesContent() {
                   <p className="text-sm text-gray-600">시설 코드: {editingFacility.facilityCode}</p>
                   <p className="text-sm text-gray-600">아이디: {editingFacility.username}</p>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-facilityName">시설명</Label>
                   <Input
                     id="edit-facilityName"
@@ -315,7 +328,7 @@ function FacilitiesContent() {
                     onChange={(e) => setEditingFacility({ ...editingFacility, facilityName: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-managerName">담당자명</Label>
                   <Input
                     id="edit-managerName"
@@ -323,7 +336,7 @@ function FacilitiesContent() {
                     onChange={(e) => setEditingFacility({ ...editingFacility, managerName: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-managerPhone">담당자 연락처</Label>
                   <Input
                     id="edit-managerPhone"
@@ -331,7 +344,7 @@ function FacilitiesContent() {
                     onChange={(e) => setEditingFacility({ ...editingFacility, managerPhone: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-address">주소</Label>
                   <Input
                     id="edit-address"
@@ -360,7 +373,6 @@ function FacilitiesContent() {
             onOpenChange={(open) => !open && setResettingPasswordFacility(null)}
           />
         )}
-      </div>
     </div>
   );
 }

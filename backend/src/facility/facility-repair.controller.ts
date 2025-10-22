@@ -23,7 +23,6 @@ import { FacilityRepairService } from './facility-repair.service';
 import {
   CreateFacilityRepairDto,
   UpdateFacilityRepairDto,
-  CompleteRepairDto,
   FacilityRepairResponseDto,
   RepairListQueryDto,
 } from '../common/dto/facility-repair.dto';
@@ -160,29 +159,6 @@ export class FacilityRepairController {
     };
   }
 
-  @Post(':id/complete')
-  @ApiOperation({ summary: '수리 완료 처리' })
-  @ApiResponse({
-    status: 200,
-    description: '완료 처리 성공',
-    type: FacilityRepairResponseDto,
-  })
-  async completeRepair(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() completeDto: CompleteRepairDto,
-    @User() user: any,
-  ): Promise<ApiSuccessResponse> {
-    const repair = await this.repairService.completeRepair(
-      id,
-      user.facilityId,
-      completeDto,
-    );
-    return {
-      success: true,
-      data: repair,
-      message: '수리 완료 처리되었습니다.',
-    };
-  }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

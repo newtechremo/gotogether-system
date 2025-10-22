@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
 import { useLogin } from "@/lib/hooks/useAuth";
+import Image from "next/image";
 
+// 로그인 폼 스키마
 const loginSchema = z.object({
-  username: z.string().min(1, "아이디를 입력해주세요"),
+  username: z.string().min(1, "관리자 ID를 입력해주세요"),
   password: z.string().min(1, "비밀번호를 입력해주세요"),
 });
 
@@ -23,61 +24,73 @@ export default function FacilityLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: login, isPending } = useLogin();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+  // 컴포넌트 마운트 시 기존 인증 정보 정리
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('facility_token');
+      localStorage.removeItem('facility_user');
+      document.cookie = 'facility_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+    }
+  }, []);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = (data: LoginFormData) => {
-    login({
-      username: data.username,
-      password: data.password,
-    });
+    login(data);
   };
 
   const handleAdminSystem = () => {
-    window.location.href = "http://localhost:3001/login";
+    // 최고관리자시스템 연결 (향후 구현)
+    window.open("http://localhost:5174/login", "_blank");
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg shadow-2xl bg-white border-0">
-        <CardHeader className="text-center space-y-6 pb-8">
-          <div className="flex justify-center mb-6">
-            <div className="relative w-60 h-20">
-              <Image
-                src="/images/korea-blind-union-logo.png"
-                alt="한국시각장애인연합회 로고"
-                fill
-                className="object-contain"
-                priority
-                sizes="(max-width: 768px) 240px, 240px"
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg shadow-lg bg-white">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/images/korea-blind-union-logo.png"
+              alt="한국시각장애인연합회 로고"
+              width={200}
+              height={60}
+              className="object-contain"
+              priority
+            />
           </div>
-          <CardTitle className="text-4xl font-bold text-black leading-tight">가치봄 플러스</CardTitle>
-          <CardTitle className="text-3xl font-semibold text-gray-700 leading-tight">시설관리자시스템</CardTitle>
+          <CardTitle className="text-3xl font-extrabold text-black">가치봄 플러스</CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-700">시설관리자 시스템</CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-8 px-8 pb-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className="space-y-3">
-              <Label htmlFor="username" className="text-xl font-medium text-black">
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* 관리자 ID 입력 */}
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-base font-bold text-black">
                 관리자 ID
               </Label>
               <Input
                 id="username"
                 type="text"
                 placeholder="관리자 ID를 입력하세요"
+                className="w-full text-base"
                 {...register("username")}
-                className="w-full text-xl py-3 px-4 border-2 border-gray-300 focus:border-blue-500"
+                disabled={isPending}
               />
               {errors.username && (
-                <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
+                <p className="text-sm text-red-600">{errors.username.message}</p>
               )}
             </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="password" className="text-xl font-medium text-black">
+            {/* 비밀번호 입력 */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-base font-bold text-black">
                 비밀번호
               </Label>
               <div className="relative">
@@ -85,8 +98,9 @@ export default function FacilityLoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="비밀번호를 입력하세요"
+                  className="w-full pr-10 text-base"
                   {...register("password")}
-                  className="w-full pr-12 text-xl py-3 px-4 border-2 border-gray-300 focus:border-blue-500"
+                  disabled={isPending}
                 />
                 <Button
                   type="button"
@@ -94,39 +108,44 @@ export default function FacilityLoginPage() {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-6 w-6 text-gray-600" />
+                    <EyeOff className="h-5 w-5 text-gray-600" />
                   ) : (
-                    <Eye className="h-6 w-6 text-gray-600" />
+                    <Eye className="h-5 w-5 text-gray-600" />
                   )}
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                <p className="text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
 
+            {/* 로그인 버튼 */}
             <Button
               type="submit"
+              className="w-full bg-black text-white font-bold py-3 text-base hover:bg-gray-800"
               disabled={isPending}
-              className="w-full bg-black text-white font-semibold py-4 text-xl hover:bg-gray-800 transition-colors"
             >
               {isPending ? "로그인 중..." : "로그인"}
             </Button>
           </form>
 
+          {/* 최고관리자시스템 연결 버튼 */}
           <Button
             onClick={handleAdminSystem}
             variant="outline"
-            className="w-full border-2 border-gray-300 py-4 text-xl font-semibold hover:bg-gray-50"
+            className="w-full border-gray-300 text-black hover:bg-gray-50 bg-white py-3 text-base font-semibold"
+            type="button"
           >
             최고관리자시스템 연결
           </Button>
 
-          <div className="bg-gray-100 p-6 rounded-lg space-y-3 border">
-            <p className="text-xl font-semibold text-black">테스트 계정:</p>
-            <div className="text-lg text-gray-700 space-y-2">
+          {/* 테스트 계정 안내 */}
+          <div className="bg-gray-100 p-4 rounded-lg space-y-2">
+            <p className="text-base font-bold text-black">테스트 계정:</p>
+            <div className="text-base text-gray-700 space-y-1">
               <p className="font-medium">시설관리자: facility / facility123</p>
             </div>
           </div>

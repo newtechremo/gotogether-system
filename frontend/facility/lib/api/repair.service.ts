@@ -2,6 +2,7 @@ import { apiClient, ApiResponse } from './client';
 
 // Enums
 export enum RepairStatus {
+  REPORTED = '신고접수',
   IN_REPAIR = '수리중',
   COMPLETED = '수리완료',
 }
@@ -33,27 +34,14 @@ export interface FacilityRepair {
 
 // DTOs
 export interface CreateFacilityRepairDto {
+  deviceType: string;
   facilityDeviceItemId: number;
-  repairDate: string;
-  repairDescription: string;
-  repairCost?: number;
-  repairCompany?: string;
-  memo?: string;
+  symptomDescription: string;
 }
 
 export interface UpdateFacilityRepairDto {
-  repairStatus?: RepairStatus;
-  repairDescription?: string;
-  repairCost?: number;
-  repairCompany?: string;
-  completionDate?: string;
-  memo?: string;
-}
-
-export interface CompleteRepairDto {
-  completionDate?: string;
-  repairCost?: number;
-  completionMemo?: string;
+  repairStatus?: string;
+  repairMemo?: string;
 }
 
 export interface RepairListQuery {
@@ -125,20 +113,6 @@ export const repairService = {
   ): Promise<FacilityRepair> {
     const response = await apiClient.put<ApiResponse<FacilityRepair>>(
       `/facility/repairs/${id}`,
-      data
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Complete repair
-   */
-  async completeRepair(
-    id: number,
-    data: CompleteRepairDto
-  ): Promise<FacilityRepair> {
-    const response = await apiClient.post<ApiResponse<FacilityRepair>>(
-      `/facility/repairs/${id}/complete`,
       data
     );
     return response.data.data;

@@ -71,6 +71,21 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     notes: "",
   });
 
+  // 시리얼번호 자동 생성 함수
+  const generateSerialNumber = (deviceType: string): string => {
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+
+    const prefix = deviceType === "AR_GLASS" ? "AR"
+                  : deviceType === "BONE_CONDUCTION" ? "BC"
+                  : "SP";
+
+    return `${prefix}${year}${month}${day}${random}`;
+  };
+
   const [deviceEditFormData, setDeviceEditFormData] = useState({
     deviceType: "AR_GLASS" as "AR_GLASS" | "BONE_CONDUCTION" | "SMARTPHONE",
     serialNumber: "",
@@ -107,6 +122,22 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
     }
   }, [kiosk]);
+
+  // 장비 등록 다이얼로그가 열릴 때 시리얼번호 자동 생성
+  useEffect(() => {
+    if (isDeviceDialogOpen) {
+      const serialNumber = generateSerialNumber(deviceFormData.deviceType);
+      setDeviceFormData(prev => ({ ...prev, serialNumber }));
+    }
+  }, [isDeviceDialogOpen]);
+
+  // 장비 타입이 변경될 때 시리얼번호 재생성
+  useEffect(() => {
+    if (isDeviceDialogOpen) {
+      const serialNumber = generateSerialNumber(deviceFormData.deviceType);
+      setDeviceFormData(prev => ({ ...prev, serialNumber }));
+    }
+  }, [deviceFormData.deviceType, isDeviceDialogOpen]);
 
   // 상태별 뱃지
   const getStatusBadge = (status: string) => {
@@ -298,9 +329,22 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     }
   };
 
+  // 전화번호 유효성 검사 함수
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone) return true; // 선택 필드이므로 빈 값은 허용
+    const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
+    return phoneRegex.test(phone);
+  };
+
   // 키오스크 정보 수정
   const handleUpdateKiosk = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 전화번호 유효성 검사
+    if (editFormData.managerPhone && !validatePhoneNumber(editFormData.managerPhone)) {
+      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      return;
+    }
 
     try {
       await updateKiosk.mutateAsync({
@@ -503,45 +547,45 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       </div>
 
       {/* 기본 정보 */}
-      <Card>
+      <Card className="border-2 border-black bg-white">
         <CardHeader>
-          <CardTitle>기본 정보</CardTitle>
+          <CardTitle className="text-2xl font-bold text-black">기본 정보</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <Label className="text-sm text-gray-600">키오스크 이름</Label>
+              <Label className="text-base text-gray-600">키오스크 이름</Label>
               <p className="text-lg font-medium">{kiosk.name}</p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">상태</Label>
+              <Label className="text-base text-gray-600">상태</Label>
               <div>{getStatusBadge(kiosk.status)}</div>
             </div>
             <div className="col-span-2">
-              <Label className="text-sm text-gray-600">설치 장소</Label>
+              <Label className="text-base text-gray-600">설치 장소</Label>
               <p className="text-lg font-medium">{kiosk.location}</p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">담당자</Label>
+              <Label className="text-base text-gray-600">담당자</Label>
               <p className="text-lg font-medium">{kiosk.managerName || "-"}</p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">연락처</Label>
+              <Label className="text-base text-gray-600">연락처</Label>
               <p className="text-lg font-medium">{kiosk.managerPhone || "-"}</p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">설치일</Label>
+              <Label className="text-base text-gray-600">설치일</Label>
               <p className="text-lg font-medium">
                 {kiosk.installationDate ? new Date(kiosk.installationDate).toLocaleDateString() : "-"}
               </p>
             </div>
             <div>
-              <Label className="text-sm text-gray-600">등록 장비 수</Label>
+              <Label className="text-base text-gray-600">등록 장비 수</Label>
               <p className="text-lg font-medium">{devices?.length || 0}대</p>
             </div>
             {kiosk.notes && (
               <div className="col-span-2">
-                <Label className="text-sm text-gray-600">비고</Label>
+                <Label className="text-base text-gray-600">비고</Label>
                 <p className="text-lg font-medium">{kiosk.notes}</p>
               </div>
             )}
@@ -550,10 +594,10 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       </Card>
 
       {/* 등록된 장비 */}
-      <Card>
+      <Card className="border-2 border-black bg-white">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>등록된 장비</CardTitle>
+            <CardTitle className="text-2xl font-bold text-black">등록된 장비</CardTitle>
             <Dialog open={isDeviceDialogOpen} onOpenChange={setIsDeviceDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -567,7 +611,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                 </DialogHeader>
                 <form onSubmit={handleCreateDevice} className="space-y-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="deviceType">장비 유형 *</Label>
                       <Select value={deviceFormData.deviceType} onValueChange={(value: any) => setDeviceFormData({ ...deviceFormData, deviceType: value })}>
                         <SelectTrigger>
@@ -580,20 +624,21 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="serialNumber">시리얼 번호 *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="serialNumber">시리얼 번호 (자동생성)</Label>
                       <Input
                         id="serialNumber"
                         value={deviceFormData.serialNumber}
-                        onChange={(e) => setDeviceFormData({ ...deviceFormData, serialNumber: e.target.value })}
-                        placeholder="예: AR2024001"
-                        required
+                        readOnly
+                        disabled
+                        className="bg-gray-100 cursor-not-allowed"
+                        placeholder="자동으로 생성됩니다"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="nfcTagId">NFC 태그 ID</Label>
                       <Input
                         id="nfcTagId"
@@ -602,7 +647,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                         placeholder="예: NFC_AR_001"
                       />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="purchaseDate">구매일</Label>
                       <Input
                         id="purchaseDate"
@@ -613,7 +658,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="deviceNotes">비고</Label>
                     <Textarea
                       id="deviceNotes"
@@ -637,33 +682,33 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {devices && devices.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">장비 유형</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">시리얼 번호</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">상태</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">NFC 태그</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
+                <thead>
+                  <tr className="border-b-2 border-black">
+                    <th className="p-6 text-left text-lg font-semibold text-black">장비 유형</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">시리얼 번호</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">NFC 태그</th>
+                    <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-200">
                   {devices.map((device) => (
                     <tr key={device.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium">{getDeviceTypeName(device.deviceType)}</td>
-                      <td className="px-6 py-4 text-sm">{device.serialNumber}</td>
-                      <td className="px-6 py-4 text-sm">{getDeviceStatusBadge(device.status)}</td>
-                      <td className="px-6 py-4 text-sm">{device.nfcTagId || "-"}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="p-6 text-base font-medium">{getDeviceTypeName(device.deviceType)}</td>
+                      <td className="p-6 text-base">{device.serialNumber}</td>
+                      <td className="p-6 text-base">{getDeviceStatusBadge(device.status)}</td>
+                      <td className="p-6 text-base">{device.nfcTagId || "-"}</td>
+                      <td className="p-6 text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditDevice(device)}>
+                          <Button variant="outline" size="sm" onClick={() => handleEditDevice(device)} className="text-base">
                             <Edit className="mr-1 h-3 w-3" />
                             수정
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleDeleteDevice(device.id, device.serialNumber)}>
+                          <Button variant="destructive" size="sm" onClick={() => handleDeleteDevice(device.id, device.serialNumber)} className="text-base">
                             삭제
                           </Button>
                         </div>
@@ -674,7 +719,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded">
+            <div className="text-center py-12 text-gray-500">
               <p className="text-lg mb-2">등록된 장비가 없습니다</p>
               <p className="text-sm text-gray-400">위 버튼을 클릭하여 장비를 등록하세요</p>
             </div>
@@ -690,7 +735,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
           </DialogHeader>
           <form onSubmit={handleUpdateDevice} className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editDeviceType">장비 유형 *</Label>
                 <Select
                   value={deviceEditFormData.deviceType}
@@ -706,7 +751,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editSerialNumber">시리얼 번호 *</Label>
                 <Input
                   id="editSerialNumber"
@@ -719,7 +764,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editBoxNumber">박스 번호 *</Label>
                 <Input
                   id="editBoxNumber"
@@ -729,7 +774,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   required
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editStatus">상태 *</Label>
                 <Select
                   value={deviceEditFormData.status}
@@ -749,7 +794,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editNfcTagId">NFC 태그 ID</Label>
                 <Input
                   id="editNfcTagId"
@@ -758,7 +803,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   placeholder="예: NFC_AR_001"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="editPurchaseDate">구매일</Label>
                 <Input
                   id="editPurchaseDate"
@@ -769,7 +814,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
               </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="editDeviceNotes">비고</Label>
               <Textarea
                 id="editDeviceNotes"
@@ -793,40 +838,40 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       </Dialog>
 
       {/* 대여 목록 */}
-      <Card>
+      <Card className="border-2 border-black bg-white">
         <CardHeader>
-          <CardTitle>대여 목록</CardTitle>
+          <CardTitle className="text-2xl font-bold text-black">대여 목록</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {rentals && rentals.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">장비 ID</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">장비 이름</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">상태</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">대여시간</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">반납시간</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">임차인 연락처</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
+                <thead>
+                  <tr className="border-b-2 border-black">
+                    <th className="p-6 text-left text-lg font-semibold text-black">장비 ID</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">장비 이름</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">대여시간</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">반납시간</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black">임차인 연락처</th>
+                    <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-200">
                   {rentals.map((rental) => (
                     <tr key={rental.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm">{rental.deviceId}</td>
-                      <td className="px-6 py-4 text-sm font-medium">{rental.deviceName}</td>
-                      <td className="px-6 py-4 text-sm">{getRentalStatusBadge(rental.status)}</td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="p-6 text-base">{rental.deviceId}</td>
+                      <td className="p-6 text-base font-medium">{rental.deviceName}</td>
+                      <td className="p-6 text-base">{getRentalStatusBadge(rental.status)}</td>
+                      <td className="p-6 text-base">
                         {new Date(rental.rentalDatetime).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="p-6 text-base">
                         {rental.actualReturnDatetime
                           ? new Date(rental.actualReturnDatetime).toLocaleString()
                           : new Date(rental.expectedReturnDatetime).toLocaleString() + " (예정)"}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="p-6 text-base">
                         <div className="flex items-center gap-2">
                           <span>{rental.renterPhoneMasked}</span>
                           <DropdownMenu>
@@ -848,13 +893,14 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                           </DropdownMenu>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="p-6 text-right">
                         {(rental.status === "rented" || rental.status === "overdue") && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleForceReturn(rental.id, rental.renterName)}
                             disabled={forceReturnRental.isPending}
+                            className="text-base"
                           >
                             강제반납
                           </Button>
@@ -866,7 +912,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded">
+            <div className="text-center py-12 text-gray-500">
               <p className="text-lg mb-2">대여 기록이 없습니다</p>
               <p className="text-sm text-gray-400">키오스크를 통해 대여가 이루어지면 여기에 표시됩니다</p>
             </div>
@@ -875,10 +921,10 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       </Card>
 
       {/* 점검 기록 */}
-      <Card>
+      <Card className="border-2 border-black bg-white">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>점검 기록</CardTitle>
+            <CardTitle className="text-2xl font-bold text-black">점검 기록</CardTitle>
             <Dialog open={isExaminationDialogOpen} onOpenChange={setIsExaminationDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -891,7 +937,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   <DialogTitle className="text-2xl">점검 기록 추가</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreateExamination} className="space-y-4 py-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="examinationDate">점검 일자 *</Label>
                     <Input
                       id="examinationDate"
@@ -903,7 +949,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="result">점검 결과 *</Label>
                       <Select value={examinationFormData.result} onValueChange={(value: any) => setExaminationFormData({ ...examinationFormData, result: value })}>
                         <SelectTrigger>
@@ -916,7 +962,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="examinationStatus">점검 상태 *</Label>
                       <Select value={examinationFormData.status} onValueChange={(value: any) => setExaminationFormData({ ...examinationFormData, status: value })}>
                         <SelectTrigger>
@@ -931,7 +977,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="examinationNotes">비고</Label>
                     <Textarea
                       id="examinationNotes"

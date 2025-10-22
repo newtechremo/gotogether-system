@@ -11,7 +11,6 @@ const navigationItems = [
   { href: "/devices", label: "기기관리", icon: "🎧" },
   { href: "/rentals", label: "대여/반납", icon: "🔄" },
   { href: "/history", label: "전체이력", icon: "📋" },
-  { href: "/repairs", label: "고장신고", icon: "🔧" },
 ]
 
 export function Navigation() {
@@ -37,35 +36,14 @@ export function Navigation() {
     <div className="bg-white border-b-2 border-black">
       <div className="max-w-7xl mx-auto px-4">
         <div className="py-6">
-          {/* 헤더: 타이틀과 로그아웃 버튼 */}
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-1" />
-            <h1 className="text-3xl font-bold text-black flex-1 text-center whitespace-nowrap">같이봄 플러스 시설관리자 시스템</h1>
-            <div className="flex-1 flex justify-end items-center gap-4">
-              {userData && (
-                <span className="text-sm font-medium text-gray-700">
-                  {userData.facilityName}
-                </span>
-              )}
-              <Link href="/profile" onClick={(e) => handleNavClick(e, "/profile")}>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "border-2 border-black text-black hover:bg-black hover:text-white transition-colors",
-                    isNavigating && "pointer-events-none opacity-50"
-                  )}
-                >
-                  👤 프로필
-                </Button>
-              </Link>
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="border-2 border-black text-black hover:bg-black hover:text-white transition-colors"
-              >
-                🚪 로그아웃
-              </Button>
-            </div>
+          {/* 헤더: 타이틀 */}
+          <div className="flex flex-col items-center mb-4">
+            <h1 className="text-3xl font-bold text-black text-center">가치봄 플러스 시설관리자 시스템</h1>
+            {userData && (
+              <p className="text-xl font-medium text-gray-700 mt-2">
+                {userData.facilityName}
+              </p>
+            )}
           </div>
 
           {/* 네비게이션 메뉴 */}
@@ -88,6 +66,46 @@ export function Navigation() {
                   <span>{item.label}</span>
                 </Link>
               ))}
+              {/* 고장신고 버튼 */}
+              <Link
+                href="/repairs"
+                onClick={(e) => handleNavClick(e, "/repairs")}
+                className={cn(
+                  "px-6 py-3 text-lg font-medium rounded-lg transition-colors",
+                  "min-h-[44px] min-w-[44px] flex items-center justify-center gap-2",
+                  "border-2 border-black",
+                  pathname === "/repairs" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100",
+                  isNavigating && "pointer-events-none opacity-50"
+                )}
+              >
+                🔧
+                <span>고장신고</span>
+              </Link>
+              {/* 시설정보 버튼 */}
+              <Link href="/profile" onClick={(e) => handleNavClick(e, "/profile")}>
+                <button
+                  className={cn(
+                    "px-6 py-3 text-lg font-medium rounded-lg transition-colors",
+                    "min-h-[44px] min-w-[44px] flex items-center justify-center gap-2",
+                    "border-2 border-black",
+                    pathname === "/profile" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100",
+                    isNavigating && "pointer-events-none opacity-50"
+                  )}
+                >
+                  🏢 <span>시설정보</span>
+                </button>
+              </Link>
+              {/* 로그아웃 버튼 */}
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  "px-6 py-3 text-lg font-medium rounded-lg transition-colors",
+                  "min-h-[44px] min-w-[44px] flex items-center justify-center gap-2",
+                  "border-2 border-black bg-white text-black hover:bg-gray-100"
+                )}
+              >
+                🚪 <span>로그아웃</span>
+              </button>
             </div>
           </nav>
         </div>

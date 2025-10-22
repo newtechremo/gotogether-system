@@ -368,9 +368,22 @@ export function HistoryTable({ history }: HistoryTableProps) {
                     </td>
                     <td className="p-6 text-lg text-black leading-relaxed">
                       <div>
-                        {event.deviceTypes
-                          .map((type) => deviceTypeLabels[type] || type)
-                          .join(", ")}
+                        {(() => {
+                          // Group device types and count quantities
+                          const deviceGroups = event.originalRental.rentalDevices.reduce((acc, device) => {
+                            const type = device.deviceType;
+                            if (!acc[type]) {
+                              acc[type] = 0;
+                            }
+                            acc[type] += device.quantity;
+                            return acc;
+                          }, {} as Record<string, number>);
+
+                          // Create grouped device labels
+                          return Object.entries(deviceGroups)
+                            .map(([type, quantity]) => `${deviceTypeLabels[type] || type} (${quantity}개)`)
+                            .join(", ");
+                        })()}
                       </div>
                     </td>
                     <td className="p-6 text-lg text-black leading-relaxed">{event.borrowerName}</td>

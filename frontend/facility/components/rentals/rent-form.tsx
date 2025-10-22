@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { FacilityDevice } from "@/lib/api/device.service"
+import type { FacilityDevice, DeviceItem } from "@/lib/api/device.service"
+import { useDevices } from "@/lib/hooks/useDevices"
 import { useCreateRental } from "@/lib/hooks/useRentals"
 import { DisabilityType, RentalType, AgeGroup, Gender } from "@/lib/api/rental.service"
 
-type DeviceType = "AR글라스" | "골전도 이어폰" | "스마트폰"
+type DeviceType = "AR글라스" | "골전도 이어폰" | "스마트폰" | "기타"
 
 interface RentFormProps {
   devices: FacilityDevice[]
@@ -22,26 +23,12 @@ const deviceTypeLabels = {
   "AR글라스": "AR 글라스",
   "골전도 이어폰": "골전도 이어폰",
   "스마트폰": "스마트폰",
+  "기타": "기타",
 }
 
 const regions = [
-  "서울",
-  "경기",
-  "인천",
-  "강원",
-  "대전",
-  "세종",
-  "충북",
-  "충남",
-  "광주",
-  "전북",
-  "전남",
-  "부산",
-  "울산",
-  "대구",
-  "경북",
-  "경남",
-  "제주",
+  "서울", "경기", "인천", "강원", "대전", "세종", "충북", "충남",
+  "광주", "전북", "전남", "부산", "울산", "대구", "경북", "경남", "제주",
 ]
 
 const ageGroups = ["10대", "20대", "30대", "40대", "50대", "60대", "70대이상"]
@@ -68,6 +55,8 @@ const calculatePeriod = (rentalDate: string, returnDate: string): number => {
 
 export function RentForm({ devices, preselectedType }: RentFormProps) {
   const { mutate: createRental, isPending } = useCreateRental()
+  const { data: allDeviceItems } = useDevices() // 개별 기기 아이템 목록
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     deviceType: preselectedType || ("" as DeviceType | ""),
     rentalDate: new Date().toISOString().split("T")[0],
@@ -120,8 +109,44 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
     }
   }, [formData.rentalType])
 
-  // Get available devices for selected type
-  const availableDevices = devices.filter((device) => device.deviceType === formData.deviceType && device.qtyAvailable > 0)
+  // Get aggregated device info for selected type
+  const selectedDeviceInfo = devices.find((device) => device.deviceType === formData.deviceType)
+  const maxQuantity = selectedDeviceInfo?.qtyAvailable || 0
+
+  // Get available device items for selected type (sorted by deviceCode)
+  const availableDeviceItems = (allDeviceItems || [])
+    .filter((item) => item.deviceType === formData.deviceType && item.status === 'available')
+    .sort((a, b) => {
+      // 기기 코드로 정렬
+      return a.deviceCode.localeCompare(b.deviceCode, 'ko-KR', { numeric: true })
+    })
+
+  // 기기 타입이 변경되면 선택 초기화
+  useEffect(() => {
+    setSelectedDeviceIds([])
+    setFormData(prev => ({ ...prev, quantity: 1 }))
+  }, [formData.deviceType])
+
+  // 선택한 기기 수가 변경되면 수량 업데이트
+  useEffect(() => {
+    if (selectedDeviceIds.length > 0) {
+      setFormData(prev => ({ ...prev, quantity: selectedDeviceIds.length }))
+    }
+  }, [selectedDeviceIds])
+
+  // 기기 선택/해제 핸들러
+  const handleDeviceToggle = (deviceId: number) => {
+    setSelectedDeviceIds(prev => {
+      if (prev.includes(deviceId)) {
+        return prev.filter(id => id !== deviceId)
+      } else {
+        if (prev.length >= maxQuantity) {
+          return prev // 최대 수량 초과 방지
+        }
+        return [...prev, deviceId]
+      }
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,8 +175,18 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
       return
     }
 
-    if (availableDevices.length === 0) {
+    if (availableDeviceItems.length === 0) {
       setError("선택한 기기 종류의 대여 가능한 기기가 없습니다")
+      return
+    }
+
+    if (selectedDeviceIds.length === 0) {
+      setError("대여할 기기를 선택해주세요")
+      return
+    }
+
+    if (selectedDeviceIds.length > maxQuantity) {
+      setError(`선택한 수량이 대여 가능 수량(${maxQuantity}개)을 초과합니다`)
       return
     }
 
@@ -169,13 +204,15 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
       devices: [
         {
           deviceType: formData.deviceType,
-          quantity: formData.quantity,
+          quantity: selectedDeviceIds.length,
+          deviceItemIds: selectedDeviceIds, // 선택한 기기 ID 전송
         }
       ],
       memo: formData.notes.trim() || undefined,
     }, {
       onSuccess: () => {
         // Reset form
+        setSelectedDeviceIds([])
         setFormData({
           deviceType: preselectedType || "",
           rentalDate: new Date().toISOString().split("T")[0],
@@ -204,323 +241,329 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-5xl">
       <h2 className="text-2xl font-bold text-black mb-6 leading-relaxed">기기 대여</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 1. 기기종류 */}
-        <div>
-          <Label htmlFor="deviceType" className="text-lg font-semibold text-black leading-relaxed">
-            1. 기기 종류 *
-          </Label>
-          <Select
-            value={formData.deviceType}
-            onValueChange={(value) => {
-              setFormData({ ...formData, deviceType: value as DeviceType })
-            }}
-          >
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="기기 종류를 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(deviceTypeLabels).map(([value, label]) => {
-                const availableCount = devices
-                  .filter((d) => d.deviceType === value)
-                  .reduce((sum, d) => sum + d.qtyAvailable, 0)
-
-                return (
-                  <SelectItem key={value} value={value} className="text-lg" disabled={availableCount === 0}>
-                    {label} {availableCount === 0 ? "(품절)" : `(${availableCount}개 가능)`}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 2. 대여일 */}
-        <div>
-          <Label htmlFor="rentalDate" className="text-lg font-semibold text-black leading-relaxed">
-            2. 대여일 *
-          </Label>
-          <Input
-            id="rentalDate"
-            type="date"
-            value={formData.rentalDate}
-            onChange={(e) => setFormData({ ...formData, rentalDate: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-          />
-        </div>
-
-        {/* 3. 대여요일 */}
-        <div>
-          <Label htmlFor="rentalDayOfWeek" className="text-lg font-semibold text-black leading-relaxed">
-            3. 대여요일
-          </Label>
-          <Input
-            id="rentalDayOfWeek"
-            type="text"
-            value={formData.rentalDayOfWeek}
-            readOnly
-            className="mt-2 min-h-[44px] text-lg border-2 border-black bg-gray-50"
-          />
-        </div>
-
-        {/* 4. 유형 */}
-        <div>
-          <Label htmlFor="rentalType" className="text-lg font-semibold text-black leading-relaxed">
-            4. 유형 *
-          </Label>
-          <Select
-            value={formData.rentalType}
-            onValueChange={(value) => setFormData({ ...formData, rentalType: value as RentalType })}
-          >
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="유형을 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={RentalType.INDIVIDUAL} className="text-lg">
-                개인
-              </SelectItem>
-              <SelectItem value={RentalType.GROUP} className="text-lg">
-                단체
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 5. 대여자이름 */}
-        <div>
-          <Label htmlFor="renterName" className="text-lg font-semibold text-black leading-relaxed">
-            5. 대여자 이름 *
-          </Label>
-          <Input
-            id="renterName"
-            type="text"
-            value={formData.renterName}
-            onChange={(e) => setFormData({ ...formData, renterName: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-            placeholder="대여자 이름을 입력하세요"
-          />
-        </div>
-
-        {/* 6. 핸드폰번호 */}
-        <div>
-          <Label htmlFor="phoneNumber" className="text-lg font-semibold text-black leading-relaxed">
-            6. 핸드폰번호 *
-          </Label>
-          <Input
-            id="phoneNumber"
-            type="tel"
-            value={formData.phoneNumber}
-            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-            placeholder="010-1234-5678"
-          />
-        </div>
-
-        {/* 7. 단체명 */}
-        {formData.rentalType === RentalType.GROUP && (
+        {/* 2열 그리드 레이아웃 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 1. 기기종류 */}
           <div>
-            <Label htmlFor="groupName" className="text-lg font-semibold text-black leading-relaxed">
-              7. 단체명 *
+            <Label htmlFor="deviceType" className="text-lg font-semibold text-black leading-relaxed">
+              1. 기기 종류 *
+            </Label>
+            <Select
+              value={formData.deviceType}
+              onValueChange={(value) => {
+                setFormData({ ...formData, deviceType: value as DeviceType })
+              }}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="기기 종류 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(deviceTypeLabels).map(([value, label]) => {
+                  const availableCount = devices
+                    .filter((d) => d.deviceType === value)
+                    .reduce((sum, d) => sum + d.qtyAvailable, 0)
+
+                  return (
+                    <SelectItem key={value} value={value} className="text-lg" disabled={availableCount === 0}>
+                      {label} {availableCount === 0 ? "(품절)" : `(${availableCount}개 가능)`}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 2. 유형 */}
+          <div>
+            <Label htmlFor="rentalType" className="text-lg font-semibold text-black leading-relaxed">
+              2. 유형 *
+            </Label>
+            <Select
+              value={formData.rentalType}
+              onValueChange={(value) => setFormData({ ...formData, rentalType: value as RentalType })}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="유형 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={RentalType.INDIVIDUAL} className="text-lg">개인</SelectItem>
+                <SelectItem value={RentalType.GROUP} className="text-lg">단체</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 3. 대여일 */}
+          <div>
+            <Label htmlFor="rentalDate" className="text-lg font-semibold text-black leading-relaxed">
+              3. 대여일 *
             </Label>
             <Input
-              id="groupName"
-              type="text"
-              value={formData.groupName}
-              onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
+              id="rentalDate"
+              type="date"
+              value={formData.rentalDate}
+              onChange={(e) => setFormData({ ...formData, rentalDate: e.target.value })}
               className="mt-2 min-h-[44px] text-lg border-2 border-black"
-              placeholder="단체명을 입력하세요"
             />
           </div>
-        )}
 
-        {/* 8. 성별 */}
-        <div>
-          <Label htmlFor="gender" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "8" : "7"}. 성별 *
-          </Label>
-          <Select
-            value={formData.gender}
-            onValueChange={(value) => setFormData({ ...formData, gender: value as Gender })}
-          >
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="성별을 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={Gender.MALE} className="text-lg">
-                남성
-              </SelectItem>
-              <SelectItem value={Gender.FEMALE} className="text-lg">
-                여성
-              </SelectItem>
-              <SelectItem value={Gender.OTHER} className="text-lg">
-                기타
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          {/* 4. 반납일 */}
+          <div>
+            <Label htmlFor="returnDate" className="text-lg font-semibold text-black leading-relaxed">
+              4. 반납일 *
+            </Label>
+            <Input
+              id="returnDate"
+              type="date"
+              value={formData.returnDate}
+              onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+            />
+          </div>
+
+          {/* 5. 대여자이름 */}
+          <div>
+            <Label htmlFor="renterName" className="text-lg font-semibold text-black leading-relaxed">
+              5. 대여자 이름 *
+            </Label>
+            <Input
+              id="renterName"
+              type="text"
+              value={formData.renterName}
+              onChange={(e) => setFormData({ ...formData, renterName: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="대여자 이름"
+            />
+          </div>
+
+          {/* 6. 핸드폰번호 */}
+          <div>
+            <Label htmlFor="phoneNumber" className="text-lg font-semibold text-black leading-relaxed">
+              6. 핸드폰번호 *
+            </Label>
+            <Input
+              id="phoneNumber"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="010-1234-5678"
+            />
+          </div>
+
+          {/* 7. 단체명 (조건부) */}
+          {formData.rentalType === RentalType.GROUP && (
+            <div className="md:col-span-2">
+              <Label htmlFor="groupName" className="text-lg font-semibold text-black leading-relaxed">
+                7. 단체명 *
+              </Label>
+              <Input
+                id="groupName"
+                type="text"
+                value={formData.groupName}
+                onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
+                className="mt-2 min-h-[44px] text-lg border-2 border-black"
+                placeholder="단체명"
+              />
+            </div>
+          )}
+
+          {/* 8. 성별 */}
+          <div>
+            <Label htmlFor="gender" className="text-lg font-semibold text-black leading-relaxed">
+              8. 성별 *
+            </Label>
+            <Select
+              value={formData.gender}
+              onValueChange={(value) => setFormData({ ...formData, gender: value as Gender })}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="성별 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={Gender.MALE} className="text-lg">남성</SelectItem>
+                <SelectItem value={Gender.FEMALE} className="text-lg">여성</SelectItem>
+                <SelectItem value={Gender.OTHER} className="text-lg">기타</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 9. 연령대 */}
+          <div>
+            <Label htmlFor="ageGroup" className="text-lg font-semibold text-black leading-relaxed">
+              9. 연령대 *
+            </Label>
+            <Select value={formData.ageGroup} onValueChange={(value) => setFormData({ ...formData, ageGroup: value as AgeGroup })}>
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="연령대 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {ageGroups.map((age) => (
+                  <SelectItem key={age} value={age} className="text-lg">{age}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 10. 지역 */}
+          <div>
+            <Label htmlFor="region" className="text-lg font-semibold text-black leading-relaxed">
+              10. 지역 *
+            </Label>
+            <Select value={formData.region} onValueChange={(value) => setFormData({ ...formData, region: value })}>
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="지역 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map((region) => (
+                  <SelectItem key={region} value={region} className="text-lg">{region}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 11. 거주지 */}
+          <div>
+            <Label htmlFor="residence" className="text-lg font-semibold text-black leading-relaxed">
+              11. 거주지 (시/군/구) *
+            </Label>
+            <Input
+              id="residence"
+              type="text"
+              value={formData.residence}
+              onChange={(e) => setFormData({ ...formData, residence: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="예: 강남구, 수원시"
+            />
+          </div>
+
+          {/* 12. 장애유형 */}
+          <div>
+            <Label htmlFor="disabilityType" className="text-lg font-semibold text-black leading-relaxed">
+              12. 장애유형 *
+            </Label>
+            <Select
+              value={formData.disabilityType}
+              onValueChange={(value) => setFormData({ ...formData, disabilityType: value as DisabilityType })}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue placeholder="장애유형 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {disabilityTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-lg">{type.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 13. 기기 선택 (전체 너비) */}
+          {formData.deviceType && availableDeviceItems.length > 0 && (
+            <div className="md:col-span-2">
+              <Label className="text-lg font-semibold text-black leading-relaxed">
+                13. 대여할 기기 선택 * (선택: {selectedDeviceIds.length}개 / 최대: {maxQuantity}개)
+              </Label>
+              <div className="mt-3 p-4 border-2 border-black rounded-lg max-h-64 overflow-y-auto bg-gray-50">
+                {availableDeviceItems.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">사용 가능한 기기가 없습니다</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availableDeviceItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedDeviceIds.includes(item.id)
+                            ? 'bg-blue-100 border-blue-500'
+                            : 'bg-white border-gray-300 hover:border-gray-400'
+                        }`}
+                        onClick={() => handleDeviceToggle(item.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          id={`device-${item.id}`}
+                          checked={selectedDeviceIds.includes(item.id)}
+                          onChange={() => handleDeviceToggle(item.id)}
+                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <Label
+                          htmlFor={`device-${item.id}`}
+                          className="flex-1 cursor-pointer text-base leading-relaxed"
+                        >
+                          <div className="font-medium">{item.deviceCode}</div>
+                          {item.serialNumber && (
+                            <div className="text-sm text-gray-600">S/N: {item.serialNumber}</div>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                체크박스를 클릭하여 대여할 기기를 선택하세요
+              </p>
+            </div>
+          )}
+
+          {/* 14. 대여목적 */}
+          <div className="md:col-span-2">
+            <Label htmlFor="rentalPurpose" className="text-lg font-semibold text-black leading-relaxed">
+              14. 대여목적 *
+            </Label>
+            <Input
+              id="rentalPurpose"
+              type="text"
+              value={formData.rentalPurpose}
+              onChange={(e) => setFormData({ ...formData, rentalPurpose: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="예: 영화 상영장 관람"
+            />
+          </div>
+
+          {/* 15. 비고 */}
+          <div className="md:col-span-2">
+            <Label htmlFor="notes" className="text-lg font-semibold text-black leading-relaxed">
+              15. 비고
+            </Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="mt-2 min-h-[100px] text-lg border-2 border-black"
+              placeholder="추가 메모사항 (선택)"
+            />
+          </div>
         </div>
 
-        {/* 9. 지역 */}
-        <div>
-          <Label htmlFor="region" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "9" : "8"}. 지역 *
-          </Label>
-          <Select value={formData.region} onValueChange={(value) => setFormData({ ...formData, region: value })}>
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="지역을 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              {regions.map((region) => (
-                <SelectItem key={region} value={region} className="text-lg">
-                  {region}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 10. 거주지 */}
-        <div>
-          <Label htmlFor="residence" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "10" : "9"}. 거주지 (시/군/구) *
-          </Label>
-          <Input
-            id="residence"
-            type="text"
-            value={formData.residence}
-            onChange={(e) => setFormData({ ...formData, residence: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-            placeholder="예: 강남구, 수원시"
-          />
-        </div>
-
-        {/* 11. 연령대 */}
-        <div>
-          <Label htmlFor="ageGroup" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "11" : "10"}. 연령대 *
-          </Label>
-          <Select value={formData.ageGroup} onValueChange={(value) => setFormData({ ...formData, ageGroup: value as AgeGroup })}>
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="연령대를 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              {ageGroups.map((age) => (
-                <SelectItem key={age} value={age} className="text-lg">
-                  {age}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 12. 대여목적 */}
-        <div>
-          <Label htmlFor="rentalPurpose" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "12" : "11"}. 대여목적 *
-          </Label>
-          <Input
-            id="rentalPurpose"
-            type="text"
-            value={formData.rentalPurpose}
-            onChange={(e) => setFormData({ ...formData, rentalPurpose: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-            placeholder="예: 영화 상영장 관람"
-          />
-        </div>
-
-        {/* 13. 장애유형 */}
-        <div>
-          <Label htmlFor="disabilityType" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "13" : "12"}. 장애유형 *
-          </Label>
-          <Select
-            value={formData.disabilityType}
-            onValueChange={(value) => setFormData({ ...formData, disabilityType: value as DisabilityType })}
-          >
-            <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
-              <SelectValue placeholder="장애유형을 선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              {disabilityTypes.map((type) => (
-                <SelectItem key={type.value} value={type.value} className="text-lg">
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 14. 수량 */}
-        <div>
-          <Label htmlFor="quantity" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "14" : "13"}. 수량 *
-          </Label>
-          <Input
-            id="quantity"
-            type="number"
-            min="1"
-            value={formData.quantity}
-            onChange={(e) => setFormData({ ...formData, quantity: Number.parseInt(e.target.value) || 1 })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-          />
-        </div>
-
-        {/* 반납일 (for calculation) */}
-        <div>
-          <Label htmlFor="returnDate" className="text-lg font-semibold text-black leading-relaxed">
-            반납일 *
-          </Label>
-          <Input
-            id="returnDate"
-            type="date"
-            value={formData.returnDate}
-            onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-            className="mt-2 min-h-[44px] text-lg border-2 border-black"
-          />
-        </div>
-
-        {/* 15. 예정기간(일) */}
-        <div>
-          <Label htmlFor="period" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "15" : "14"}. 예정기간 (일)
-          </Label>
-          <Input
-            id="period"
-            type="number"
-            value={formData.period}
-            readOnly
-            className="mt-2 min-h-[44px] text-lg border-2 border-black bg-gray-50"
-          />
-        </div>
-
-        {/* 16. 예정연인원 */}
-        <div>
-          <Label htmlFor="totalPersonDays" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "16" : "15"}. 예정연인원
-          </Label>
-          <Input
-            id="totalPersonDays"
-            type="number"
-            value={formData.totalPersonDays}
-            readOnly
-            className="mt-2 min-h-[44px] text-lg border-2 border-black bg-gray-50"
-          />
-        </div>
-
-        {/* 17. 비고 */}
-        <div>
-          <Label htmlFor="notes" className="text-lg font-semibold text-black leading-relaxed">
-            {formData.rentalType === RentalType.GROUP ? "17" : "16"}. 비고
-          </Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            className="mt-2 min-h-[100px] text-lg border-2 border-black"
-            placeholder="추가 메모사항을 입력하세요 (선택사항)"
-          />
+        {/* 자동 계산 필드 (읽기 전용) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
+          <div>
+            <Label className="text-base font-medium text-gray-700">대여요일</Label>
+            <Input
+              value={formData.rentalDayOfWeek}
+              readOnly
+              className="mt-1 bg-white text-base border-gray-300"
+            />
+          </div>
+          <div>
+            <Label className="text-base font-medium text-gray-700">예정기간 (일)</Label>
+            <Input
+              value={formData.period}
+              readOnly
+              className="mt-1 bg-white text-base border-gray-300"
+            />
+          </div>
+          <div>
+            <Label className="text-base font-medium text-gray-700">예정연인원</Label>
+            <Input
+              value={formData.totalPersonDays}
+              readOnly
+              className="mt-1 bg-white text-base border-gray-300"
+            />
+          </div>
         </div>
 
         {error && (

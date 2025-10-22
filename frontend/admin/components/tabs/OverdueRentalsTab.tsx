@@ -115,176 +115,161 @@ export default function OverdueRentalsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Go Together 장기 미반납자</h2>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold text-black">Go Together 장기 미반납자</h2>
+        <div className="flex items-center gap-2 text-base text-gray-600">
+          <AlertTriangle className="h-5 w-5 text-red-600" />
           <span>총 <strong className="text-red-600">{filteredRentals.length}</strong>건의 미반납 건</span>
         </div>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            필터 및 정렬
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Kiosk Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Go Together 선택</label>
-              <Select value={selectedKiosk} onValueChange={setSelectedKiosk}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  {kiosks?.map((kiosk) => (
-                    <SelectItem key={kiosk.id} value={kiosk.id.toString()}>
-                      {kiosk.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Kiosk Selection */}
+        <div className="space-y-2">
+          <label className="text-base font-medium">Go Together 선택</label>
+          <Select value={selectedKiosk} onValueChange={setSelectedKiosk}>
+            <SelectTrigger className="text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-base">전체</SelectItem>
+              {kiosks?.map((kiosk) => (
+                <SelectItem key={kiosk.id} value={kiosk.id.toString()} className="text-base">
+                  {kiosk.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* Time Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">경과 시간 필터</label>
-              <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="24">24시간 초과</SelectItem>
-                  <SelectItem value="48">48시간 초과</SelectItem>
-                  <SelectItem value="72">72시간 초과</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Time Filter */}
+        <div className="space-y-2">
+          <label className="text-base font-medium">경과 시간 필터</label>
+          <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as any)}>
+            <SelectTrigger className="text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-base">전체</SelectItem>
+              <SelectItem value="24" className="text-base">24시간 초과</SelectItem>
+              <SelectItem value="48" className="text-base">48시간 초과</SelectItem>
+              <SelectItem value="72" className="text-base">72시간 초과</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* Sort By */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">정렬 기준</label>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="time">경과 시간 순</SelectItem>
-                  <SelectItem value="location">장소 순</SelectItem>
-                  <SelectItem value="device">장비 순</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Sort By */}
+        <div className="space-y-2">
+          <label className="text-base font-medium">정렬 기준</label>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="time" className="text-base">경과 시간 순</SelectItem>
+              <SelectItem value="location" className="text-base">장소 순</SelectItem>
+              <SelectItem value="device" className="text-base">장비 순</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* Stats */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">통계</label>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-600">
-                  심각: <span className="font-bold text-red-600">
-                    {filteredRentals.filter(r => r.severity === "critical").length}
-                  </span> / 주의: <span className="font-bold text-yellow-600">
-                    {filteredRentals.filter(r => r.severity === "warning").length}
-                  </span>
-                </div>
-              </div>
+        {/* Stats */}
+        <div className="space-y-2">
+          <label className="text-base font-medium">통계</label>
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-base text-gray-600">
+              심각: <span className="font-bold text-red-600">
+                {filteredRentals.filter(r => r.severity === "critical").length}
+              </span> / 주의: <span className="font-bold text-yellow-600">
+                {filteredRentals.filter(r => r.severity === "warning").length}
+              </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Rentals List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            장기 미반납 목록
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {filteredRentals.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p className="text-lg mb-2">미반납 건이 없습니다</p>
-              <p className="text-sm text-gray-400">필터 조건을 변경해보세요</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">번호</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Go Together</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">설치장소</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">장비 이름</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">장비 종류</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">대여시간</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">경과 시간</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">심각도</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
+      {filteredRentals.length === 0 ? (
+        <Card className="border-2 border-black bg-white">
+          <div className="p-12 text-center text-gray-500">
+            <p className="text-lg mb-2">미반납 건이 없습니다</p>
+            <p className="text-sm text-gray-400">필터 조건을 변경해보세요</p>
+          </div>
+        </Card>
+      ) : (
+        <Card className="border-2 border-black bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-black">
+                  <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">Go Together</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">설치장소</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">장비 이름</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">장비 종류</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">대여시간</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">경과 시간</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">심각도</th>
+                  <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredRentals.map((rental, index) => (
+                  <tr key={rental.id} className="hover:bg-gray-50">
+                    <td className="p-6 text-base">{index + 1}</td>
+                    <td className="p-6 text-base font-medium">{rental.kioskName}</td>
+                    <td className="p-6 text-base">{rental.location}</td>
+                    <td className="p-6 text-base font-medium">{rental.deviceName}</td>
+                    <td className="p-6 text-base">{rental.deviceType}</td>
+                    <td className="p-6 text-base">{rental.rentalTime}</td>
+                    <td className="p-6 text-base">
+                      <span className={rental.elapsedHours > 72 ? "text-red-600 font-bold" : "text-yellow-600 font-medium"}>
+                        {getElapsedTimeDisplay(rental.elapsedHours)}
+                      </span>
+                    </td>
+                    <td className="p-6 text-base">
+                      {getSeverityBadge(rental.severity)}
+                    </td>
+                    <td className="p-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCall(rental.renterPhone, rental.renterName)}
+                          className="text-blue-600 hover:text-blue-700 text-base"
+                        >
+                          <Phone className="h-4 w-4 mr-1" />
+                          전화
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSMS(rental.renterPhone, rental.renterName)}
+                          className="text-green-600 hover:text-green-700 text-base"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          SMS
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleForceReturn(rental.id, rental.kioskId, rental.deviceName)}
+                          disabled={forceReturnRental.isPending}
+                          className="text-base"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          {forceReturnRental.isPending ? "처리 중..." : "강제반납"}
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredRentals.map((rental, index) => (
-                    <tr key={rental.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 text-sm">{index + 1}</td>
-                      <td className="px-4 py-4 text-sm font-medium">{rental.kioskName}</td>
-                      <td className="px-4 py-4 text-sm">{rental.location}</td>
-                      <td className="px-4 py-4 text-sm font-medium">{rental.deviceName}</td>
-                      <td className="px-4 py-4 text-sm">{rental.deviceType}</td>
-                      <td className="px-4 py-4 text-sm">{rental.rentalTime}</td>
-                      <td className="px-4 py-4 text-sm">
-                        <span className={rental.elapsedHours > 72 ? "text-red-600 font-bold" : "text-yellow-600 font-medium"}>
-                          {getElapsedTimeDisplay(rental.elapsedHours)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-sm">
-                        {getSeverityBadge(rental.severity)}
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCall(rental.renterPhone, rental.renterName)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Phone className="h-4 w-4 mr-1" />
-                            전화
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSMS(rental.renterPhone, rental.renterName)}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            SMS
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleForceReturn(rental.id, rental.kioskId, rental.deviceName)}
-                            disabled={forceReturnRental.isPending}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            {forceReturnRental.isPending ? "처리 중..." : "강제반납"}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

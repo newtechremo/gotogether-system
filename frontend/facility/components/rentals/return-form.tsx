@@ -108,10 +108,20 @@ export function ReturnForm({ currentRentals, preselectedRentalId }: ReturnFormPr
 
           <div className="grid gap-4 max-h-96 overflow-y-auto">
             {filteredRentals.map((rental) => {
-              // Get device type labels
-              const deviceLabels = rental.rentalDevices
-                .map((device) => `${deviceTypeLabels[device.deviceType] || device.deviceType} (${device.quantity}개)`)
-                .join(", ")
+              // Group devices by type and sum quantities
+              const deviceGroups = rental.rentalDevices.reduce((acc, device) => {
+                const type = device.deviceType;
+                if (!acc[type]) {
+                  acc[type] = 0;
+                }
+                acc[type] += device.quantity;
+                return acc;
+              }, {} as Record<string, number>);
+
+              // Create grouped device labels
+              const deviceLabels = Object.entries(deviceGroups)
+                .map(([type, quantity]) => `${deviceTypeLabels[type] || type} (${quantity}개)`)
+                .join(", ");
 
               return (
                 <Card

@@ -76,7 +76,9 @@
       "Bash(aws s3 mb:*)",
       "Bash(aws s3api put-public-access-block:*)",
       "Bash(\"BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true\" )",
-      "Bash(aws s3api put-bucket-versioning:*)"
+      "Bash(aws s3api put-bucket-versioning:*)",
+      "Bash(timeout 30 npm run start:dev:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

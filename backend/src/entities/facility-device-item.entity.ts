@@ -8,7 +8,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { FacilityDevice } from './facility-device.entity';
+import { Facility } from './facility.entity';
 import { FacilityRentalDevice } from './facility-rental-device.entity';
 import { FacilityRepair } from './facility-repair.entity';
 
@@ -17,8 +17,15 @@ export class FacilityDeviceItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'facility_device_id' })
-  facilityDeviceId: number;
+  @Column({ name: 'facility_id' })
+  facilityId: number;
+
+  @Column({
+    type: 'enum',
+    enum: ['AR글라스', '골전도 이어폰', '스마트폰', '기타'],
+    name: 'device_type',
+  })
+  deviceType: string;
 
   @Column({ name: 'device_code', unique: true })
   deviceCode: string;
@@ -45,12 +52,9 @@ export class FacilityDeviceItem {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(
-    () => FacilityDevice,
-    (facilityDevice) => facilityDevice.deviceItems,
-  )
-  @JoinColumn({ name: 'facility_device_id' })
-  facilityDevice: FacilityDevice;
+  @ManyToOne(() => Facility, (facility) => facility.deviceItems)
+  @JoinColumn({ name: 'facility_id' })
+  facility: Facility;
 
   @OneToMany(
     () => FacilityRentalDevice,

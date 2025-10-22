@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCreateDevice } from "@/lib/hooks/useDevices"
-import type { CreateFacilityDeviceDto } from "@/lib/api/device.service"
+import type { CreateDeviceItemDto } from "@/lib/api/device.service"
 
 interface AddDeviceDialogProps {
   onClose: () => void
@@ -18,43 +18,53 @@ const deviceTypeLabels = {
   "AR글라스": "AR 글라스",
   "골전도 이어폰": "골전도 이어폰",
   "스마트폰": "스마트폰",
+  "기타": "기타",
 } as const
 
 export function AddDeviceDialog({ onClose }: AddDeviceDialogProps) {
   const { mutate: createDevice, isPending } = useCreateDevice()
   const [formData, setFormData] = useState({
-    type: "" as "AR글라스" | "골전도 이어폰" | "스마트폰" | "",
-    quantity: "",
-    memo: "",
+    deviceType: "" as "AR글라스" | "골전도 이어폰" | "스마트폰" | "기타" | "",
+    deviceCode: "",
+    notes: "",
+    serialNumber: "",
   })
   const [error, setError] = useState("")
+
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    const originalPaddingRight = document.body.style.paddingRight
+
+    // Get scrollbar width
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+    document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      document.body.style.paddingRight = originalPaddingRight
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    if (!formData.type || !formData.quantity) {
-      setError("기기 종류와 수량은 필수 입력 항목입니다")
+    if (!formData.deviceType || !formData.deviceCode) {
+      setError("기기 종류와 기기 명칭은 필수 입력 항목입니다")
       return
     }
 
-    const quantity = Number.parseInt(formData.quantity)
-    if (isNaN(quantity) || quantity <= 0) {
-      setError("수량은 1 이상의 숫자여야 합니다")
-      return
-    }
-
-    // 수량만큼 deviceItems 배열 생성
-    const deviceItems = Array.from({ length: quantity }, (_, index) => ({
-      deviceCode: `${formData.type}-${Date.now()}-${index + 1}`,
-      serialNumber: `SN-${Date.now()}-${index + 1}`,
+    const data: CreateDeviceItemDto = {
+      deviceType: formData.deviceType,
+      deviceCode: formData.deviceCode.trim(),
+      notes: formData.notes.trim() || undefined,
+      serialNumber: formData.serialNumber.trim() || undefined,
       registrationDate: new Date().toISOString().split('T')[0],
-    }))
-
-    const data: CreateFacilityDeviceDto = {
-      deviceType: formData.type,
-      deviceItems,
-      memo: formData.memo || undefined,
     }
 
     createDevice(data, {
@@ -68,18 +78,18 @@ export function AddDeviceDialog({ onClose }: AddDeviceDialogProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white border-2 border-black rounded-lg p-8 max-w-md w-full mx-4">
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+      <div className="bg-white border-2 border-black rounded-lg p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-black mb-6 leading-relaxed">신규 기기 등록</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Label htmlFor="type" className="text-lg font-semibold text-black leading-relaxed">
+            <Label htmlFor="deviceType" className="text-lg font-semibold text-black leading-relaxed">
               기기 종류 *
             </Label>
             <Select
-              value={formData.type}
-              onValueChange={(value) => setFormData({ ...formData, type: value as typeof formData.type })}
+              value={formData.deviceType}
+              onValueChange={(value) => setFormData({ ...formData, deviceType: value as typeof formData.deviceType })}
             >
               <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
                 <SelectValue placeholder="기기 종류를 선택하세요" />
@@ -95,30 +105,43 @@ export function AddDeviceDialog({ onClose }: AddDeviceDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="quantity" className="text-lg font-semibold text-black leading-relaxed">
-              수량 *
+            <Label htmlFor="deviceCode" className="text-lg font-semibold text-black leading-relaxed">
+              기기 명칭 *
             </Label>
             <Input
-              id="quantity"
-              type="number"
-              min="1"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              id="deviceCode"
+              type="text"
+              value={formData.deviceCode}
+              onChange={(e) => setFormData({ ...formData, deviceCode: e.target.value })}
               className="mt-2 min-h-[44px] text-lg border-2 border-black"
-              placeholder="1"
+              placeholder="예: AR-001"
             />
           </div>
 
           <div>
-            <Label htmlFor="memo" className="text-lg font-semibold text-black leading-relaxed">
+            <Label htmlFor="notes" className="text-lg font-semibold text-black leading-relaxed">
               메모 (선택)
             </Label>
             <Textarea
-              id="memo"
-              value={formData.memo}
-              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="mt-2 min-h-[88px] text-lg border-2 border-black resize-none"
               placeholder="추가 정보나 특이사항을 입력하세요"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="serialNumber" className="text-lg font-semibold text-black leading-relaxed">
+              시리얼 번호 (선택)
+            </Label>
+            <Input
+              id="serialNumber"
+              type="text"
+              value={formData.serialNumber}
+              onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="예: SN202400001"
             />
           </div>
 

@@ -26,26 +26,24 @@ export function RentalTabs({ devices, currentRentals }: RentalTabsProps) {
   }, [searchParams])
 
   return (
-    <Card className="border-2 border-black bg-white">
-      <div className="border-b-2 border-black">
-        <div className="flex">
-          <Button
-            onClick={() => setActiveTab("rent")}
-            className={`flex-1 min-h-[60px] text-xl font-semibold rounded-none border-r border-black ${
-              activeTab === "rent" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"
-            }`}
-          >
-            대여하기
-          </Button>
-          <Button
-            onClick={() => setActiveTab("return")}
-            className={`flex-1 min-h-[60px] text-xl font-semibold rounded-none ${
-              activeTab === "return" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"
-            }`}
-          >
-            반납하기
-          </Button>
-        </div>
+    <Card className="border-2 border-black bg-white p-0 overflow-hidden">
+      <div className="flex border-b-2 border-black">
+        <Button
+          onClick={() => setActiveTab("rent")}
+          className={`flex-1 min-h-[60px] text-xl font-semibold rounded-none border-r border-black ${
+            activeTab === "rent" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"
+          }`}
+        >
+          대여하기
+        </Button>
+        <Button
+          onClick={() => setActiveTab("return")}
+          className={`flex-1 min-h-[60px] text-xl font-semibold rounded-none ${
+            activeTab === "return" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"
+          }`}
+        >
+          반납하기
+        </Button>
       </div>
 
       <div className="p-8">

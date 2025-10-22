@@ -1,15 +1,17 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useUpdateDevice } from "@/lib/hooks/useDevices"
-import type { FacilityDevice } from "@/lib/api/device.service"
+import type { DeviceItem } from "@/lib/api/device.service"
 
 interface EditDeviceDialogProps {
-  device: FacilityDevice
+  device: DeviceItem
   onClose: () => void
 }
 
@@ -17,21 +19,66 @@ const deviceTypeLabels = {
   "AR글라스": "AR 글라스",
   "골전도 이어폰": "골전도 이어폰",
   "스마트폰": "스마트폰",
+  "기타": "기타",
+} as const
+
+const statusLabels = {
+  available: "사용가능",
+  rented: "대여중",
+  broken: "고장",
+  maintenance: "수리중",
 } as const
 
 export function EditDeviceDialog({ device, onClose }: EditDeviceDialogProps) {
   const { mutate: updateDevice, isPending } = useUpdateDevice()
   const [formData, setFormData] = useState({
-    memo: device.memo || "",
+    deviceType: device.deviceType,
+    deviceCode: device.deviceCode,
+    notes: device.notes || "",
+    serialNumber: device.serialNumber || "",
+    status: device.status,
   })
   const [error, setError] = useState("")
+
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    const originalPaddingRight = document.body.style.paddingRight
+
+    // Get scrollbar width
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+    document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      document.body.style.paddingRight = originalPaddingRight
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
+    if (!formData.deviceCode.trim()) {
+      setError("기기 명칭은 필수 입력 항목입니다")
+      return
+    }
+
     updateDevice(
-      { id: device.id, data: { memo: formData.memo || undefined } },
+      {
+        id: device.id,
+        data: {
+          deviceType: formData.deviceType,
+          deviceCode: formData.deviceCode.trim(),
+          notes: formData.notes.trim() || undefined,
+          serialNumber: formData.serialNumber.trim() || undefined,
+          status: formData.status,
+        }
+      },
       {
         onSuccess: () => {
           onClose()
@@ -44,43 +91,92 @@ export function EditDeviceDialog({ device, onClose }: EditDeviceDialogProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white border-2 border-black rounded-lg p-8 max-w-md w-full mx-4">
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+      <div className="bg-white border-2 border-black rounded-lg p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-black mb-6 leading-relaxed">기기 정보 수정</h2>
-
-        <div className="mb-6 p-4 bg-gray-100 border border-gray-300 rounded-lg">
-          <p className="text-lg text-black leading-relaxed">
-            <strong>기기 종류:</strong> {deviceTypeLabels[device.deviceType as keyof typeof deviceTypeLabels]}
-          </p>
-          <p className="text-lg text-black leading-relaxed mt-2">
-            <strong>총 수량:</strong> {device.qtyTotal}개
-          </p>
-          <p className="text-lg text-black leading-relaxed mt-2">
-            <strong>대여 가능:</strong> {device.qtyAvailable}개
-          </p>
-          <p className="text-lg text-black leading-relaxed mt-2">
-            <strong>현재 대여중:</strong> {device.qtyRented}개
-          </p>
-          <p className="text-lg text-black leading-relaxed mt-2">
-            <strong>고장:</strong> {device.qtyBroken}개
-          </p>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Label htmlFor="memo" className="text-lg font-semibold text-black leading-relaxed">
+            <Label htmlFor="deviceType" className="text-lg font-semibold text-black leading-relaxed">
+              기기 종류
+            </Label>
+            <Select
+              value={formData.deviceType}
+              onValueChange={(value) => setFormData({ ...formData, deviceType: value as typeof formData.deviceType })}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(deviceTypeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value} className="text-lg">
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="deviceCode" className="text-lg font-semibold text-black leading-relaxed">
+              기기 명칭 *
+            </Label>
+            <Input
+              id="deviceCode"
+              type="text"
+              value={formData.deviceCode}
+              onChange={(e) => setFormData({ ...formData, deviceCode: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="예: AR-001"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="notes" className="text-lg font-semibold text-black leading-relaxed">
               메모
             </Label>
             <Textarea
-              id="memo"
-              value={formData.memo}
-              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="mt-2 min-h-[88px] text-lg border-2 border-black resize-none"
-              placeholder="기기 관련 메모를 입력하세요"
+              placeholder="추가 정보나 특이사항을 입력하세요"
             />
-            <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-              * 수량 변경은 개별 기기 아이템을 추가하거나 삭제하여 조정할 수 있습니다.
-            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="serialNumber" className="text-lg font-semibold text-black leading-relaxed">
+              시리얼 번호
+            </Label>
+            <Input
+              id="serialNumber"
+              type="text"
+              value={formData.serialNumber}
+              onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              placeholder="예: SN202400001"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="status" className="text-lg font-semibold text-black leading-relaxed">
+              상태
+            </Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => setFormData({ ...formData, status: value as typeof formData.status })}
+            >
+              <SelectTrigger className="mt-2 min-h-[44px] text-lg border-2 border-black">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value} className="text-lg">
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {error && (

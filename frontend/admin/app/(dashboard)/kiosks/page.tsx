@@ -94,9 +94,22 @@ export default function KiosksPage() {
     }
   };
 
+  // 전화번호 유효성 검사 함수
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone) return true; // 선택 필드이므로 빈 값은 허용
+    const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
+    return phoneRegex.test(phone);
+  };
+
   // 키오스크 등록 핸들러
   const handleCreateKiosk = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 전화번호 유효성 검사
+    if (formData.managerPhone && !validatePhoneNumber(formData.managerPhone)) {
+      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      return;
+    }
 
     try {
       await createKiosk.mutateAsync(formData);
@@ -317,10 +330,19 @@ export default function KiosksPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: '5%' }} />
+                    <col style={{ width: '15%' }} />
+                    <col style={{ width: '25%' }} />
+                    <col style={{ width: '10%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '8%' }} />
+                    <col style={{ width: '25%' }} />
+                  </colgroup>
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">No</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">번호</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">키오스크명</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">위치</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">담당자</th>
@@ -332,13 +354,13 @@ export default function KiosksPage() {
                   <tbody className="divide-y">
                     {filteredKiosks.map((kiosk, index) => (
                       <tr key={kiosk.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm">
+                        <td className="px-6 py-4 text-sm truncate">
                           {(page - 1) * 10 + index + 1}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium">{kiosk.name}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.location}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.managerName || "-"}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.managerPhone || "-"}</td>
+                        <td className="px-6 py-4 text-sm font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
+                        <td className="px-6 py-4 text-sm truncate" title={kiosk.location}>{kiosk.location}</td>
+                        <td className="px-6 py-4 text-sm truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
+                        <td className="px-6 py-4 text-sm truncate" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
                         <td className="px-6 py-4 text-sm">{getStatusBadge(kiosk.status)}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">

@@ -7,7 +7,7 @@ import { QueryProvider } from "@/lib/providers/query-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "시설관리자시스템 - 가치봄플러스",
+  title: "가치봄 플러스 시설관리자 시스템",
   description: "AR 글라스, 골전도 이어폰, 스마트폰 대여 관리",
   generator: "v0.app",
 };

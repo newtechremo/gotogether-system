@@ -16,6 +16,7 @@ export enum DeviceTypeEnum {
   AR_GLASS = 'AR글라스',
   BONE_CONDUCTION = '골전도 이어폰',
   SMARTPHONE = '스마트폰',
+  ETC = '기타',
 }
 
 export enum DeviceItemStatusEnum {
@@ -25,11 +26,24 @@ export enum DeviceItemStatusEnum {
   MAINTENANCE = 'maintenance',
 }
 
-// DTO for creating a device item
+// DTO for creating a device item (individual item)
 export class CreateDeviceItemDto {
-  @ApiProperty({ description: '장비 코드', example: 'AR-001' })
+  @ApiProperty({
+    description: '장비 유형',
+    enum: DeviceTypeEnum,
+    example: DeviceTypeEnum.AR_GLASS,
+  })
+  @IsEnum(DeviceTypeEnum)
+  deviceType: DeviceTypeEnum;
+
+  @ApiProperty({ description: '장비 명칭 (기기 코드)', example: 'AR-001' })
   @IsString()
   deviceCode: string;
+
+  @ApiPropertyOptional({ description: '메모' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 
   @ApiPropertyOptional({ description: '시리얼 번호', example: 'SN202400001' })
   @IsString()
@@ -44,11 +58,6 @@ export class CreateDeviceItemDto {
   @IsString()
   @IsOptional()
   registrationDate?: string;
-
-  @ApiPropertyOptional({ description: '비고' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
 }
 
 // DTO for creating a facility device (with items)
@@ -78,10 +87,23 @@ export class CreateFacilityDeviceDto {
 
 // DTO for updating device item
 export class UpdateDeviceItemDto {
-  @ApiPropertyOptional({ description: '장비 코드' })
+  @ApiPropertyOptional({
+    description: '장비 유형',
+    enum: DeviceTypeEnum,
+  })
+  @IsEnum(DeviceTypeEnum)
+  @IsOptional()
+  deviceType?: DeviceTypeEnum;
+
+  @ApiPropertyOptional({ description: '장비 명칭 (기기 코드)' })
   @IsString()
   @IsOptional()
   deviceCode?: string;
+
+  @ApiPropertyOptional({ description: '메모' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 
   @ApiPropertyOptional({ description: '시리얼 번호' })
   @IsString()
@@ -100,11 +122,6 @@ export class UpdateDeviceItemDto {
   @IsString()
   @IsOptional()
   registrationDate?: string;
-
-  @ApiPropertyOptional({ description: '비고' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
 }
 
 // DTO for updating facility device
@@ -121,7 +138,16 @@ export class DeviceItemResponseDto {
   id: number;
 
   @ApiProperty()
+  facilityId: number;
+
+  @ApiProperty({ enum: DeviceTypeEnum })
+  deviceType: string;
+
+  @ApiProperty()
   deviceCode: string;
+
+  @ApiProperty()
+  notes: string;
 
   @ApiProperty()
   serialNumber: string;
@@ -131,9 +157,6 @@ export class DeviceItemResponseDto {
 
   @ApiProperty()
   registrationDate: string;
-
-  @ApiProperty()
-  notes: string;
 
   @ApiProperty()
   createdAt: Date;

@@ -32,8 +32,8 @@ export class FacilityRepair {
 
   @Column({
     type: 'enum',
-    enum: ['수리접수', '수리중', '수리완료'],
-    default: '수리접수',
+    enum: ['신고접수', '수리중', '수리완료'],
+    default: '신고접수',
   })
   status: string;
 

@@ -64,9 +64,22 @@ export default function GoTogetherManagementTab() {
   };
 
 
+  // 전화번호 유효성 검사 함수
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone) return true; // 선택 필드이므로 빈 값은 허용
+    const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
+    return phoneRegex.test(phone);
+  };
+
   // 키오스크 등록 핸들러
   const handleCreateKiosk = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 전화번호 유효성 검사
+    if (formData.managerPhone && !validatePhoneNumber(formData.managerPhone)) {
+      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      return;
+    }
 
     try {
       await createKiosk.mutateAsync(formData);
@@ -120,8 +133,8 @@ export default function GoTogetherManagementTab() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Go Together 키오스크 위치 관리</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-black">Go Together 키오스크 위치 관리</h2>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button size="lg" className="text-lg px-6 py-3 bg-black hover:bg-gray-800">
@@ -134,7 +147,7 @@ export default function GoTogetherManagementTab() {
               <DialogTitle className="text-2xl">신규 키오스크 등록</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateKiosk} className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="name">키오스크 이름 *</Label>
                 <Input
                   id="name"
@@ -145,7 +158,7 @@ export default function GoTogetherManagementTab() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="location">설치 장소 *</Label>
                 <Input
                   id="location"
@@ -157,7 +170,7 @@ export default function GoTogetherManagementTab() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="managerName">담당자명</Label>
                   <Input
                     id="managerName"
@@ -166,7 +179,7 @@ export default function GoTogetherManagementTab() {
                     placeholder="김영화"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="managerPhone">담당자 연락처</Label>
                   <Input
                     id="managerPhone"
@@ -178,7 +191,7 @@ export default function GoTogetherManagementTab() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="installationDate">설치일</Label>
                   <Input
                     id="installationDate"
@@ -187,7 +200,7 @@ export default function GoTogetherManagementTab() {
                     onChange={(e) => setFormData({ ...formData, installationDate: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="status">상태</Label>
                   <Select
                     value={formData.status}
@@ -205,7 +218,7 @@ export default function GoTogetherManagementTab() {
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="notes">비고</Label>
                 <Textarea
                   id="notes"
@@ -244,78 +257,85 @@ export default function GoTogetherManagementTab() {
           placeholder="키오스크명, 위치, 담당자명 검색"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-md"
+          className="max-w-md text-base"
         />
-        <Button onClick={() => refetch()}>
+        <Button onClick={() => refetch()} className="text-base">
           <Search className="mr-2 h-4 w-4" />
           검색
         </Button>
       </div>
 
       {/* 키오스크 목록 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>키오스크 위치 목록</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {!filteredKiosks || filteredKiosks.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">등록된 키오스크가 없습니다.</div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">No</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">키오스크명</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">위치</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">담당자</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">연락처</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">상태</th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">작업</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {filteredKiosks.map((kiosk, index) => (
-                      <tr key={kiosk.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm">
-                          {(page - 1) * 10 + index + 1}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">{kiosk.name}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.location}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.managerName || "-"}</td>
-                        <td className="px-6 py-4 text-sm">{kiosk.managerPhone || "-"}</td>
-                        <td className="px-6 py-4 text-sm">{getStatusBadge(kiosk.status)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetail(kiosk.id)}
-                              disabled={loadingDetailId === kiosk.id}
-                            >
-                              {loadingDetailId === kiosk.id ? "로딩 중..." : "상세"}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteKiosk(kiosk.id, kiosk.name)}
-                              disabled={loadingDetailId !== null}
-                            >
-                              삭제
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {!filteredKiosks || filteredKiosks.length === 0 ? (
+        <Card className="border-2 border-black bg-white">
+          <div className="p-12 text-center text-gray-500">
+            <p className="text-lg">등록된 키오스크가 없습니다.</p>
+          </div>
+        </Card>
+      ) : (
+        <Card className="border-2 border-black bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '25%' }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b-2 border-black">
+                  <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">키오스크명</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">위치</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
+                  <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredKiosks.map((kiosk, index) => (
+                  <tr key={kiosk.id} className="hover:bg-gray-50">
+                    <td className="p-6 text-base truncate">
+                      {(page - 1) * 10 + index + 1}
+                    </td>
+                    <td className="p-6 text-base font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
+                    <td className="p-6 text-base truncate" title={kiosk.location}>{kiosk.location}</td>
+                    <td className="p-6 text-base truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
+                    <td className="p-6 text-base truncate" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
+                    <td className="p-6 text-base">{getStatusBadge(kiosk.status)}</td>
+                    <td className="p-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetail(kiosk.id)}
+                          disabled={loadingDetailId === kiosk.id}
+                          className="text-base"
+                        >
+                          {loadingDetailId === kiosk.id ? "로딩 중..." : "상세"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteKiosk(kiosk.id, kiosk.name)}
+                          disabled={loadingDetailId !== null}
+                          className="text-base"
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* 페이지네이션 */}
       {kiosksData && kiosksData.totalPages > 1 && (

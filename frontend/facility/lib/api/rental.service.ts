@@ -26,7 +26,8 @@ export enum AgeGroup {
   THIRTIES = '30대',
   FORTIES = '40대',
   FIFTIES = '50대',
-  SIXTIES_PLUS = '60대 이상',
+  SIXTIES = '60대',
+  SEVENTIES_PLUS = '70대이상',
 }
 
 export enum Gender {

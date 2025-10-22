@@ -12,12 +12,21 @@ import {
 
 // Enums
 export enum RepairStatusEnum {
+  REPORTED = '신고접수',
   IN_REPAIR = '수리중',
   COMPLETED = '수리완료',
 }
 
-// 수리 등록 DTO
+// 고장신고 등록 DTO
 export class CreateFacilityRepairDto {
+  @ApiProperty({
+    description: '기기 종류',
+    example: 'AR글라스',
+  })
+  @IsString()
+  @IsNotEmpty()
+  deviceType: string;
+
   @ApiProperty({
     description: '수리할 장비 아이템 ID',
     example: 1,
@@ -27,47 +36,15 @@ export class CreateFacilityRepairDto {
   facilityDeviceItemId: number;
 
   @ApiProperty({
-    description: '수리 시작일',
-    example: '2025-01-15',
-  })
-  @IsDateString()
-  repairDate: string;
-
-  @ApiProperty({
-    description: '수리 내용',
-    example: '화면 깨짐으로 인한 디스플레이 교체',
+    description: '고장 증상',
+    example: '화면이 깨져서 표시가 안됩니다',
   })
   @IsString()
   @IsNotEmpty()
-  repairDescription: string;
-
-  @ApiPropertyOptional({
-    description: '예상 수리 비용 (원)',
-    example: 150000,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  repairCost?: number;
-
-  @ApiPropertyOptional({
-    description: '수리 업체',
-    example: '(주)테크서비스',
-  })
-  @IsOptional()
-  @IsString()
-  repairCompany?: string;
-
-  @ApiPropertyOptional({
-    description: '메모',
-    example: '보증 기간 내 수리',
-  })
-  @IsOptional()
-  @IsString()
-  memo?: string;
+  symptomDescription: string;
 }
 
-// 수리 정보 수정 DTO
+// 수리 정보 수정 DTO (상태 변경 및 수리 메모)
 export class UpdateFacilityRepairDto {
   @ApiPropertyOptional({
     description: '수리 상태',
@@ -78,69 +55,12 @@ export class UpdateFacilityRepairDto {
   repairStatus?: RepairStatusEnum;
 
   @ApiPropertyOptional({
-    description: '수리 내용',
+    description: '수리 메모',
+    example: '부품 주문 완료, 3일 내 수리 예정',
   })
   @IsOptional()
   @IsString()
-  repairDescription?: string;
-
-  @ApiPropertyOptional({
-    description: '수리 비용 (원)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  repairCost?: number;
-
-  @ApiPropertyOptional({
-    description: '수리 업체',
-  })
-  @IsOptional()
-  @IsString()
-  repairCompany?: string;
-
-  @ApiPropertyOptional({
-    description: '수리 완료일',
-    example: '2025-01-20',
-  })
-  @IsOptional()
-  @IsDateString()
-  completionDate?: string;
-
-  @ApiPropertyOptional({
-    description: '메모',
-  })
-  @IsOptional()
-  @IsString()
-  memo?: string;
-}
-
-// 수리 완료 처리 DTO
-export class CompleteRepairDto {
-  @ApiPropertyOptional({
-    description: '수리 완료일 (미입력시 오늘 날짜)',
-    example: '2025-01-20',
-  })
-  @IsOptional()
-  @IsDateString()
-  completionDate?: string;
-
-  @ApiPropertyOptional({
-    description: '최종 수리 비용 (원)',
-    example: 150000,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  repairCost?: number;
-
-  @ApiPropertyOptional({
-    description: '완료 메모',
-    example: '정상적으로 수리 완료됨',
-  })
-  @IsOptional()
-  @IsString()
-  completionMemo?: string;
+  repairMemo?: string;
 }
 
 // 수리 응답 DTO
@@ -155,40 +75,28 @@ export class FacilityRepairResponseDto {
   facilityDeviceItemId: number;
 
   @ApiProperty()
-  repairDate: string;
+  deviceType: string;
+
+  @ApiProperty()
+  deviceCode: string;
+
+  @ApiProperty()
+  reportDate: string;
 
   @ApiProperty()
   repairStatus: string;
 
   @ApiProperty()
-  repairDescription: string;
+  symptomDescription: string;
 
   @ApiPropertyOptional()
-  repairCost?: number;
-
-  @ApiPropertyOptional()
-  repairCompany?: string;
-
-  @ApiPropertyOptional()
-  completionDate?: string;
-
-  @ApiPropertyOptional()
-  memo?: string;
+  repairMemo?: string;
 
   @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()
   updatedAt: Date;
-
-  // 장비 정보 (populated)
-  @ApiPropertyOptional()
-  deviceItem?: {
-    id: number;
-    deviceCode: string;
-    deviceType: string;
-    status: string;
-  };
 }
 
 // 수리 목록 조회 쿼리 DTO

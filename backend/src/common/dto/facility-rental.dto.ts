@@ -219,6 +219,14 @@ export class ReturnRentalDto {
   @IsOptional()
   @IsString()
   returnMemo?: string;
+
+  @ApiPropertyOptional({
+    description: '반납 상태 (정상, 파손, 분실 등)',
+    example: 'normal',
+  })
+  @IsOptional()
+  @IsString()
+  returnCondition?: string;
 }
 
 // 대여 장비 응답 DTO

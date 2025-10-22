@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, Like } from 'typeorm';
+import { Repository, DataSource, Between, Like, In } from 'typeorm';
 import { FacilityRental } from '../entities/facility-rental.entity';
 import { FacilityRentalDevice } from '../entities/facility-rental-device.entity';
 import { FacilityDevice } from '../entities/facility-device.entity';
@@ -105,35 +105,15 @@ export class FacilityRentalService {
         {};
 
       for (const deviceDto of createDto.devices) {
-        // 해당 장비 타입 조회
-        const facilityDevice = await queryRunner.manager.findOne(
-          FacilityDevice,
-          {
-            where: { facilityId, deviceType: deviceDto.deviceType },
-          },
-        );
-
-        if (!facilityDevice) {
-          throw new BadRequestException(
-            `${deviceDto.deviceType} 장비가 등록되어 있지 않습니다.`,
-          );
-        }
-
-        // 재고 확인
-        if (facilityDevice.qtyAvailable < deviceDto.quantity) {
-          throw new BadRequestException(
-            `${deviceDto.deviceType} 장비의 재고가 부족합니다. (가능: ${facilityDevice.qtyAvailable}, 요청: ${deviceDto.quantity})`,
-          );
-        }
-
         // 특정 장비 아이템이 지정된 경우
         if (deviceDto.deviceItemIds && deviceDto.deviceItemIds.length > 0) {
           const specifiedItems = await queryRunner.manager.find(
             FacilityDeviceItem,
             {
               where: {
-                id: deviceDto.deviceItemIds[0], // In 연산자 대신 개별 확인
-                facilityDeviceId: facilityDevice.id,
+                id: In(deviceDto.deviceItemIds), // In 연산자로 여러 ID 확인
+                facilityId,
+                deviceType: deviceDto.deviceType,
                 status: 'available',
               },
             },
@@ -141,7 +121,7 @@ export class FacilityRentalService {
 
           if (specifiedItems.length !== deviceDto.deviceItemIds.length) {
             throw new BadRequestException(
-              `지정된 ${deviceDto.deviceType} 장비 아이템이 대여 불가능합니다.`,
+              `지정된 ${deviceDto.deviceType} 장비 아이템이 대여 불가능합니다. (가능: ${specifiedItems.length}, 요청: ${deviceDto.deviceItemIds.length})`,
             );
           }
 
@@ -152,7 +132,8 @@ export class FacilityRentalService {
             FacilityDeviceItem,
             {
               where: {
-                facilityDeviceId: facilityDevice.id,
+                facilityId,
+                deviceType: deviceDto.deviceType,
                 status: 'available',
               },
               take: deviceDto.quantity,
@@ -161,7 +142,7 @@ export class FacilityRentalService {
 
           if (availableItems.length < deviceDto.quantity) {
             throw new BadRequestException(
-              `${deviceDto.deviceType} 장비의 사용 가능한 아이템이 부족합니다.`,
+              `${deviceDto.deviceType} 장비의 사용 가능한 아이템이 부족합니다. (가능: ${availableItems.length}, 요청: ${deviceDto.quantity})`,
             );
           }
 
@@ -216,7 +197,7 @@ export class FacilityRentalService {
               rentalId: savedRental.id,
               deviceType: deviceDto.deviceType,
               quantity: 1,
-              facilityDeviceItemId: item.id,
+              deviceItemId: item.id,
             },
           );
           await queryRunner.manager.save(rentalDevice);
@@ -323,8 +304,15 @@ export class FacilityRentalService {
           (deviceQuantities[rentalDevice.deviceType] || 0) +
           rentalDevice.quantity;
 
+        // facility_rental_devices 테이블의 반납 상태 업데이트
+        rentalDevice.isReturned = true;
+        rentalDevice.returnDatetime = rental.actualReturnDate;
+        rentalDevice.returnCondition = returnDto.returnCondition || 'normal';
+        await queryRunner.manager.save(rentalDevice);
+
         // 장비 아이템 상태를 'available'로 변경
         if (rentalDevice.deviceItemId) {
+          // device_item_id가 있는 경우: 특정 기기 업데이트
           const deviceItem = await queryRunner.manager.findOne(
             FacilityDeviceItem,
             {
@@ -332,9 +320,27 @@ export class FacilityRentalService {
             },
           );
 
-          if (deviceItem) {
+          if (deviceItem && deviceItem.status === 'rented') {
             deviceItem.status = 'available';
             await queryRunner.manager.save(deviceItem);
+          }
+        } else {
+          // device_item_id가 NULL인 경우: 해당 타입의 rented 상태인 기기들을 quantity만큼 available로 변경
+          const rentedItems = await queryRunner.manager.find(
+            FacilityDeviceItem,
+            {
+              where: {
+                facilityId,
+                deviceType: rentalDevice.deviceType,
+                status: 'rented',
+              },
+              take: rentalDevice.quantity,
+            },
+          );
+
+          for (const item of rentedItems) {
+            item.status = 'available';
+            await queryRunner.manager.save(item);
           }
         }
       }

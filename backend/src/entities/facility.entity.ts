@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { AdminUser } from './admin-user.entity';
 import { FacilityDevice } from './facility-device.entity';
+import { FacilityDeviceItem } from './facility-device-item.entity';
 import { FacilityRental } from './facility-rental.entity';
 import { FacilityRepair } from './facility-repair.entity';
 
@@ -67,6 +68,9 @@ export class Facility {
 
   @OneToMany(() => FacilityDevice, (device) => device.facility)
   facilityDevices: FacilityDevice[];
+
+  @OneToMany(() => FacilityDeviceItem, (deviceItem) => deviceItem.facility)
+  deviceItems: FacilityDeviceItem[];
 
   @OneToMany(() => FacilityRental, (rental) => rental.facility)
   facilityRentals: FacilityRental[];

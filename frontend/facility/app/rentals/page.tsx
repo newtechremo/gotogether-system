@@ -2,12 +2,12 @@
 
 import { Navigation } from "@/components/navigation"
 import { RentalTabs } from "@/components/rentals/rental-tabs"
-import { useDevices } from "@/lib/hooks/useDevices"
+import { useAggregatedDevices } from "@/lib/hooks/useDevices"
 import { useCurrentRentals } from "@/lib/hooks/useRentals"
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute"
 
 export default function RentalsPage() {
-  const { data: devices, isLoading: devicesLoading } = useDevices();
+  const { data: devices, isLoading: devicesLoading } = useAggregatedDevices();
   const { data: currentRentals, isLoading: rentalsLoading } = useCurrentRentals();
 
   const isLoading = devicesLoading || rentalsLoading;
