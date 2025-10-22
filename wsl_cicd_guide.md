@@ -839,6 +839,98 @@ echo "Environment variables stored in Parameter Store"
 rm backend.env  # 로컬 파일 삭제 (보안)
 ```
 
+
+GitHub Secrets 설정
+
+  1. GitHub 저장소 → Settings → Secrets and variables → Actions
+  2. "New repository secret" 클릭
+  3. 다음 Secrets 추가:
+
+  AWS_ACCESS_KEY_ID:
+  - Name: AWS_ACCESS_KEY_ID
+  - Secret: AWS IAM Access Key ID
+
+  AWS_SECRET_ACCESS_KEY:
+  - Name: AWS_SECRET_ACCESS_KEY
+  - Secret: AWS IAM Secret Access Key
+
+
+
+  1. GitHub에서 새 저장소 생성
+
+  1. https://github.com 에 로그인
+  2. 우측 상단의 '+' 버튼 클릭 → 'New repository' 선택
+  3. 저장소 정보 입력:
+    - Repository name: gotogether-system (또는 원하는 이름)
+    - Description: 시각장애인 보조기기 대여 관리 플랫폼
+    - Visibility: Private 또는 Public 선택
+    - ⚠️ 중요: "Initialize this repository with a README" 체크 해제
+  4. 'Create repository' 클릭
+
+  2. 로컬 저장소를 GitHub에 연결 및 푸시
+
+  GitHub에서 저장소 생성 후 표시되는 URL을 사용하여 다음 명령어를 실행하세요:
+
+
+  1. GitHub Personal Access Token 생성
+
+  1. GitHub 로그인 → 우측 상단 프로필 클릭
+  2. Settings → Developer settings → Personal access tokens → Tokens (classic)
+  3. "Generate new token" → "Generate new token (classic)" 클릭
+  4. 설정:
+    - Note: gotogether-system-access
+    - Expiration: 90 days (또는 원하는 기간)
+    - Select scopes: repo 전체 체크
+  5. "Generate token" 클릭
+  6. ⚠️ 중요: 생성된 토큰을 복사해두세요 (다시 볼 수 없습니다!)
+
+  2. Token으로 Push
+
+  # 토큰을 포함한 URL로 다시 추가
+  git remote add origin https://YOUR_TOKEN@github.com/newtechremo/gotogether-system.git
+
+
+  # 또는 SSH 방식 (SSH 키가 설정되어 있는 경우)
+  # git remote add origin git@github.com:YOUR_USERNAME/gotogether-system.git
+
+  # 브랜치 이름을 main으로 변경 (선택사항, GitHub 기본값에 맞추기)
+  git branch -M main
+
+  # GitHub에 푸시
+  git push -u origin main
+
+  3. 완료 확인
+
+  GitHub 저장소 페이지에서 다음을 확인하세요:
+  - ✅ 371개 파일이 업로드되었는지
+  - ✅ .env 파일들이 제외되었는지 (.env.example만 포함되어야 함)
+  - ✅ README.md가 제대로 표시되는지
+
+  현재 상태 요약
+
+  - ✅ Git 저장소 초기화 완료
+  - ✅ .gitignore 파일 생성 (환경변수, node_modules 등 제외)
+  - ✅ 초기 커밋 생성 (371 files, 67,756 insertions)
+  - ✅ 민감한 정보(.env) 제외됨
+  - ⏳ GitHub 원격 저장소 연결 대기중
+
+  추가 팁
+
+  브랜치 전략:
+  # 개발 브랜치 생성
+  git checkout -b develop
+
+  # 기능 개발 시
+  git checkout -b feature/your-feature-name
+
+  나중에 변경사항 푸시:
+  git add .
+  git commit -m "변경 내용 설명"
+  git push origin main
+
+  GitHub 저장소가 생성되면 위 명령어들을 실행하시면 됩니다!
+
+
 ---
 
 ## 9장: SSL 인증서 설정
