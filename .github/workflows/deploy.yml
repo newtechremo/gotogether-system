@@ -1,0 +1,49 @@
+name: Deploy GoTogether to EC2
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-northeast-2
+  APPLICATION_NAME: gotogether-app
+  DEPLOYMENT_GROUP: gotogether-production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Create deployment package
+      run: |
+        zip -r deployment.zip . -x "*.git*" ".github/*" "*.md" "node_modules/*" "*/node_modules/*"
+
+    - name: Upload to S3
+      run: |
+        BUCKET_NAME="gotogether-deployments-$(date +%s)"
+        aws s3 mb s3://$BUCKET_NAME
+        aws s3 cp deployment.zip s3://$BUCKET_NAME/
+        echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+    - name: Create CodeDeploy Deployment
+      run: |
+        DEPLOYMENT_ID=$(aws deploy create-deployment \
+          --application-name ${{ env.APPLICATION_NAME }} \
+          --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
+          --s3-location bucket=${{ env.BUCKET_NAME }},key=deployment.zip,bundleType=zip \
+          --query 'deploymentId' \
+          --output text)
+
+        echo "Deployment ID: $DEPLOYMENT_ID"
+
+        # 배포 상태 확인
+        aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID
