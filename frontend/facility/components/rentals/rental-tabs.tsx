@@ -48,7 +48,7 @@ export function RentalTabs({ devices, currentRentals }: RentalTabsProps) {
 
       <div className="p-8">
         {activeTab === "rent" ? (
-          <RentForm devices={devices} />
+          <RentForm devices={devices} preselectedType={searchParams.get('deviceType') as any} />
         ) : (
           <ReturnForm currentRentals={currentRentals} preselectedRentalId={searchParams.get('rentalId')} />
         )}

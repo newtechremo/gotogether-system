@@ -118,10 +118,10 @@
     @apply border-border outline-ring/50;
   }
   html {
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-noto-sans), system-ui, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-noto-sans), system-ui, sans-serif;
   }
 }

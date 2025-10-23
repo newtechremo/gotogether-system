@@ -472,32 +472,29 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {availableDeviceItems.map((item) => (
-                      <div
+                      <label
                         key={item.id}
+                        htmlFor={`device-${item.id}`}
                         className={`flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
                           selectedDeviceIds.includes(item.id)
                             ? 'bg-blue-100 border-blue-500'
                             : 'bg-white border-gray-300 hover:border-gray-400'
                         }`}
-                        onClick={() => handleDeviceToggle(item.id)}
                       >
                         <input
                           type="checkbox"
                           id={`device-${item.id}`}
                           checked={selectedDeviceIds.includes(item.id)}
                           onChange={() => handleDeviceToggle(item.id)}
-                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                         />
-                        <Label
-                          htmlFor={`device-${item.id}`}
-                          className="flex-1 cursor-pointer text-base leading-relaxed"
-                        >
+                        <div className="flex-1 text-base leading-relaxed">
                           <div className="font-medium">{item.deviceCode}</div>
                           {item.serialNumber && (
                             <div className="text-sm text-gray-600">S/N: {item.serialNumber}</div>
                           )}
-                        </Label>
-                      </div>
+                        </div>
+                      </label>
                     ))}
                   </div>
                 )}

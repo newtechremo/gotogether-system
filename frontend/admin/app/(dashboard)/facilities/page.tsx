@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, KeyRound } from "lucide-react";
 import type { Facility, CreateFacilityRequest, UpdateFacilityRequest } from "@/lib/api/facility.service";
@@ -28,6 +29,7 @@ function FacilitiesContent() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingFacility, setEditingFacility] = useState<Facility | null>(null);
   const [resettingPasswordFacility, setResettingPasswordFacility] = useState<Facility | null>(null);
+  const [passwordError, setPasswordError] = useState("");
 
   const { data: facilitiesData, isLoading } = useFacilities(page, 10, search);
   const createFacility = useCreateFacility();
@@ -49,10 +51,21 @@ function FacilitiesContent() {
     setPage(1);
   };
 
+  const isPasswordValid = (password: string) => {
+    return password.length >= 8 && /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/.test(password);
+  };
+
   const handleAddFacility = () => {
+    if (!isPasswordValid(newFacility.password)) {
+      setPasswordError("비밀번호는 최소 8자 이상, 영문과 숫자를 포함해야 합니다.");
+      return;
+    }
+
+    setPasswordError("");
     createFacility.mutate(newFacility, {
       onSuccess: () => {
         setShowAddModal(false);
+        setPasswordError("");
         setNewFacility({
           facilityCode: "",
           facilityName: "",
@@ -74,6 +87,7 @@ function FacilitiesContent() {
       managerName: editingFacility.managerName,
       managerPhone: editingFacility.managerPhone,
       address: editingFacility.address,
+      isActive: editingFacility.isActive,
     };
 
     updateFacility.mutate(
@@ -115,7 +129,8 @@ function FacilitiesContent() {
                     id="facilityCode"
                     value={newFacility.facilityCode}
                     onChange={(e) => setNewFacility({ ...newFacility, facilityCode: e.target.value })}
-                    placeholder="예: FAC001"
+                    placeholder="8자 이내 (예: FAC001)"
+                    maxLength={8}
                   />
                 </div>
                 <div className="space-y-2">
@@ -124,7 +139,8 @@ function FacilitiesContent() {
                     id="facilityName"
                     value={newFacility.facilityName}
                     onChange={(e) => setNewFacility({ ...newFacility, facilityName: e.target.value })}
-                    placeholder="예: 서울시각장애인복지관"
+                    placeholder="20자 이내 (예: 서울시각장애인복지관)"
+                    maxLength={20}
                   />
                 </div>
                 <div className="space-y-2">
@@ -133,7 +149,8 @@ function FacilitiesContent() {
                     id="username"
                     value={newFacility.username}
                     onChange={(e) => setNewFacility({ ...newFacility, username: e.target.value })}
-                    placeholder="예: facility001"
+                    placeholder="20자 이내 (예: facility001)"
+                    maxLength={20}
                   />
                 </div>
                 <div className="space-y-2">
@@ -142,9 +159,23 @@ function FacilitiesContent() {
                     id="password"
                     type="password"
                     value={newFacility.password}
-                    onChange={(e) => setNewFacility({ ...newFacility, password: e.target.value })}
-                    placeholder="최소 6자 이상"
+                    onChange={(e) => {
+                      setNewFacility({ ...newFacility, password: e.target.value });
+                      setPasswordError("");
+                    }}
+                    placeholder="최소 8자, 영문+숫자 조합"
                   />
+                  {passwordError && (
+                    <p className="text-sm text-red-600">{passwordError}</p>
+                  )}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-700 font-semibold mb-1">비밀번호 요구사항:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                      <li>최소 8자 이상</li>
+                      <li>영문과 숫자 포함 필수</li>
+                      <li>특수문자 사용 가능 (@$!%*#?&)</li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="managerName">담당자명</Label>
@@ -218,36 +249,40 @@ function FacilitiesContent() {
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: '5%' }} />
+                  <col style={{ width: '4%' }} />
                   <col style={{ width: '10%' }} />
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '20%' }} />
                   <col style={{ width: '12%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '14%' }} />
                   <col style={{ width: '8%' }} />
-                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '22%' }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b-2 border-black">
-                    <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
+                    <th className="p-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">시설코드</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">시설명</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">아이디</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
                     <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
-                    <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                    <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {facilitiesData.data.items.map((facility, index) => (
                     <tr key={facility.id} className="hover:bg-gray-50">
-                      <td className="p-6 text-base truncate">
+                      <td className="p-6 text-base">
                         {(facilitiesData.data.page - 1) * facilitiesData.data.limit + index + 1}
                       </td>
                       <td className="p-6 text-base font-medium truncate" title={facility.facilityCode}>{facility.facilityCode}</td>
-                      <td className="p-6 text-base font-medium truncate" title={facility.facilityName}>{facility.facilityName}</td>
-                      <td className="p-6 text-base truncate" title={facility.username}>{facility.username}</td>
+                      <td className="p-6 text-base font-medium" title={facility.facilityName}>
+                        <div className="line-clamp-2">{facility.facilityName}</div>
+                      </td>
+                      <td className="p-6 text-base" title={facility.username}>
+                        <div className="line-clamp-2 break-all">{facility.username}</div>
+                      </td>
                       <td className="p-6 text-base truncate" title={facility.managerName || "-"}>{facility.managerName || "-"}</td>
                       <td className="p-6 text-base truncate" title={facility.managerPhone || "-"}>{facility.managerPhone || "-"}</td>
                       <td className="p-6 text-base">
@@ -255,8 +290,8 @@ function FacilitiesContent() {
                           {facility.isActive ? "활성" : "비활성"}
                         </Badge>
                       </td>
-                      <td className="p-6 text-right">
-                        <div className="flex justify-end gap-2">
+                      <td className="p-6">
+                        <div className="flex justify-center gap-2">
                           <Button variant="outline" size="sm" onClick={() => setEditingFacility(facility)} className="text-base">
                             수정
                           </Button>
@@ -264,10 +299,10 @@ function FacilitiesContent() {
                             variant="outline"
                             size="sm"
                             onClick={() => setResettingPasswordFacility(facility)}
-                            className="text-blue-600 hover:text-blue-700 text-base"
+                            className="text-blue-600 hover:text-blue-700"
+                            title="비밀번호 재설정"
                           >
-                            <KeyRound className="h-4 w-4 mr-1" />
-                            비밀번호 재설정
+                            <KeyRound className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"
@@ -351,6 +386,21 @@ function FacilitiesContent() {
                     value={editingFacility.address || ""}
                     onChange={(e) => setEditingFacility({ ...editingFacility, address: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-isActive">상태</Label>
+                  <Select
+                    value={editingFacility.isActive ? "active" : "inactive"}
+                    onValueChange={(value) => setEditingFacility({ ...editingFacility, isActive: value === "active" })}
+                  >
+                    <SelectTrigger id="edit-isActive">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">활성</SelectItem>
+                      <SelectItem value="inactive">비활성</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex justify-end gap-4 pt-4">
                   <Button variant="outline" onClick={() => setEditingFacility(null)}>

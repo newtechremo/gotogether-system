@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Search, ChevronLeft, ChevronRight, Eye, Plus, ClipboardCheck } from "lucide-react";
+import { MapPin, Search, ChevronLeft, ChevronRight, Eye, Plus, ClipboardCheck, AlertCircle } from "lucide-react";
 
 export default function KiosksPage() {
   const [page, setPage] = useState(1);
@@ -29,6 +29,11 @@ export default function KiosksPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isExaminationDialogOpen, setIsExaminationDialogOpen] = useState(false);
   const [selectedKioskId, setSelectedKioskId] = useState<number | null>(null);
+  const [alertDialog, setAlertDialog] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: "",
+    message: "",
+  });
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -36,7 +41,7 @@ export default function KiosksPage() {
     location: "",
     managerName: "",
     managerPhone: "",
-    installationDate: "",
+    installationDate: new Date().toISOString().split("T")[0],
     status: "active" as "active" | "inactive" | "maintenance",
     notes: "",
   });
@@ -94,20 +99,45 @@ export default function KiosksPage() {
     }
   };
 
+  // 전화번호 자동 포맷팅 함수
+  const formatPhoneNumber = (value: string): string => {
+    const numbers = value.replace(/[^\d]/g, "");
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    if (numbers.length <= 10) return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   // 전화번호 유효성 검사 함수
   const validatePhoneNumber = (phone: string): boolean => {
-    if (!phone) return true; // 선택 필드이므로 빈 값은 허용
+    if (!phone) return false; // 필수 필드로 변경
     const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
     return phoneRegex.test(phone);
+  };
+
+  // 알림 표시 함수
+  const showAlert = (title: string, message: string) => {
+    setAlertDialog({ open: true, title, message });
   };
 
   // 키오스크 등록 핸들러
   const handleCreateKiosk = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 필수 입력 검증
+    if (!formData.managerName.trim()) {
+      showAlert("입력 오류", "담당자명을 입력해주세요.");
+      return;
+    }
+
+    if (!formData.managerPhone.trim()) {
+      showAlert("입력 오류", "담당자 연락처를 입력해주세요.");
+      return;
+    }
+
     // 전화번호 유효성 검사
-    if (formData.managerPhone && !validatePhoneNumber(formData.managerPhone)) {
-      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+    if (!validatePhoneNumber(formData.managerPhone)) {
+      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
       return;
     }
 
@@ -119,14 +149,14 @@ export default function KiosksPage() {
         location: "",
         managerName: "",
         managerPhone: "",
-        installationDate: "",
+        installationDate: new Date().toISOString().split("T")[0],
         status: "active",
         notes: "",
       });
       refetch();
-      alert("키오스크 위치가 성공적으로 등록되었습니다");
+      showAlert("성공", "키오스크 위치가 성공적으로 등록되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
     }
   };
 
@@ -148,9 +178,9 @@ export default function KiosksPage() {
         status: "normal",
         notes: "",
       });
-      alert("점검 기록이 성공적으로 추가되었습니다");
+      showAlert("성공", "점검 기록이 성공적으로 추가되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
     }
   };
 
@@ -167,9 +197,9 @@ export default function KiosksPage() {
     try {
       await deleteKiosk.mutateAsync(id);
       refetch();
-      alert("키오스크가 성공적으로 삭제되었습니다");
+      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
     }
   };
 
@@ -225,21 +255,24 @@ export default function KiosksPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="managerName">담당자명</Label>
+                  <Label htmlFor="managerName">담당자명 *</Label>
                   <Input
                     id="managerName"
                     value={formData.managerName}
                     onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
                     placeholder="김영화"
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="managerPhone">담당자 연락처</Label>
+                  <Label htmlFor="managerPhone">담당자 연락처 *</Label>
                   <Input
                     id="managerPhone"
                     value={formData.managerPhone}
-                    onChange={(e) => setFormData({ ...formData, managerPhone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, managerPhone: formatPhoneNumber(e.target.value) })}
                     placeholder="010-1234-5678"
+                    maxLength={13}
+                    required
                   />
                 </div>
               </div>
@@ -332,17 +365,17 @@ export default function KiosksPage() {
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <colgroup>
-                    <col style={{ width: '5%' }} />
+                    <col style={{ width: '4%' }} />
                     <col style={{ width: '15%' }} />
-                    <col style={{ width: '25%' }} />
+                    <col style={{ width: '22%' }} />
                     <col style={{ width: '10%' }} />
-                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '16%' }} />
                     <col style={{ width: '8%' }} />
                     <col style={{ width: '25%' }} />
                   </colgroup>
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">번호</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">번호</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">키오스크명</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">위치</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">담당자</th>
@@ -353,21 +386,26 @@ export default function KiosksPage() {
                   </thead>
                   <tbody className="divide-y">
                     {filteredKiosks.map((kiosk, index) => (
-                      <tr key={kiosk.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm truncate">
+                      <tr key={kiosk.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetail(kiosk.id)}>
+                        <td className="px-6 py-4 text-sm">
                           {(page - 1) * 10 + index + 1}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
-                        <td className="px-6 py-4 text-sm truncate" title={kiosk.location}>{kiosk.location}</td>
+                        <td className="px-6 py-4 text-sm" title={kiosk.location}>
+                          <div className="line-clamp-2">{kiosk.location}</div>
+                        </td>
                         <td className="px-6 py-4 text-sm truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
-                        <td className="px-6 py-4 text-sm truncate" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
+                        <td className="px-6 py-4 text-sm" title={kiosk.managerPhone || "-"}>
+                          {kiosk.managerPhone || "-"}
+                        </td>
                         <td className="px-6 py-4 text-sm">{getStatusBadge(kiosk.status)}</td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewDetail(kiosk.id)}
+                              className="text-sm"
                             >
                               상세
                             </Button>
@@ -375,6 +413,7 @@ export default function KiosksPage() {
                               variant="destructive"
                               size="sm"
                               onClick={() => handleDeleteKiosk(kiosk.id, kiosk.name)}
+                              className="text-sm"
                             >
                               삭제
                             </Button>
@@ -612,6 +651,26 @@ export default function KiosksPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Alert Dialog */}
+      <Dialog open={alertDialog.open} onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              {alertDialog.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-base whitespace-pre-line">{alertDialog.message}</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setAlertDialog({ open: false, title: "", message: "" })}>
+              확인
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

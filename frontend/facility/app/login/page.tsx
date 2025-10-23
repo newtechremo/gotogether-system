@@ -78,15 +78,15 @@ export default function FacilityLoginPage() {
               priority
             />
           </div>
-          <CardTitle className="text-3xl font-extrabold text-black">가치봄 플러스</CardTitle>
-          <CardTitle className="text-2xl font-bold text-gray-700">시설관리자 시스템</CardTitle>
+          <CardTitle className="text-3xl font-bold text-black">가치봄 플러스</CardTitle>
+          <CardTitle className="text-2xl font-semibold text-gray-700">시설관리자 시스템</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* 관리자 ID 입력 */}
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-base font-bold text-black">
+              <Label htmlFor="username" className="text-base font-medium text-black">
                 관리자 ID
               </Label>
               <Input
@@ -104,7 +104,7 @@ export default function FacilityLoginPage() {
 
             {/* 비밀번호 입력 */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-base font-bold text-black">
+              <Label htmlFor="password" className="text-base font-medium text-black">
                 비밀번호
               </Label>
               <div className="relative">
@@ -139,7 +139,7 @@ export default function FacilityLoginPage() {
             {/* 로그인 버튼 */}
             <Button
               type="submit"
-              className="w-full bg-black text-white font-bold py-3 text-base hover:bg-gray-800"
+              className="w-full bg-black text-white font-medium py-3 text-base hover:bg-gray-800"
               disabled={isPending}
             >
               {isPending ? "로그인 중..." : "로그인"}
@@ -150,7 +150,7 @@ export default function FacilityLoginPage() {
           <Button
             onClick={handleAdminSystem}
             variant="outline"
-            className="w-full border-gray-300 text-black hover:bg-gray-50 bg-white py-3 text-base font-semibold"
+            className="w-full border-gray-300 text-black hover:bg-gray-50 bg-white py-3 text-base"
             type="button"
           >
             최고관리자시스템 연결
@@ -158,9 +158,9 @@ export default function FacilityLoginPage() {
 
           {/* 테스트 계정 안내 */}
           <div className="bg-gray-100 p-4 rounded-lg space-y-2">
-            <p className="text-base font-bold text-black">테스트 계정:</p>
+            <p className="text-base font-medium text-black">테스트 계정:</p>
             <div className="text-base text-gray-700 space-y-1">
-              <p className="font-medium">시설관리자: facility / facility123</p>
+              <p>시설관리자: facility / facility123</p>
             </div>
           </div>
         </CardContent>

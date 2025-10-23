@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, Phone, MessageSquare, XCircle, Filter, Loader2 } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, XCircle, Filter, Loader2 } from "lucide-react";
 import { useOverdueRentals, useKiosks } from "@/lib/hooks/useAdmin";
 import { useForceReturnRental } from "@/lib/hooks/useKiosks";
 
@@ -23,6 +23,19 @@ export default function OverdueRentalsTab() {
   const [selectedKiosk, setSelectedKiosk] = useState("all");
   const [timeFilter, setTimeFilter] = useState<"all" | "24" | "48" | "72">("all");
   const [sortBy, setSortBy] = useState<"time" | "location" | "device">("time");
+  const [visiblePhoneIds, setVisiblePhoneIds] = useState<Set<number>>(new Set());
+
+  const togglePhoneVisibility = (rentalId: number) => {
+    setVisiblePhoneIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(rentalId)) {
+        newSet.delete(rentalId);
+      } else {
+        newSet.add(rentalId);
+      }
+      return newSet;
+    });
+  };
 
   const getSeverityBadge = (severity: "critical" | "warning") => {
     if (severity === "critical") {
@@ -38,14 +51,6 @@ export default function OverdueRentalsTab() {
       return `${days}일 ${remainingHours}시간`;
     }
     return `${hours}시간`;
-  };
-
-  const handleCall = (phone: string, name: string) => {
-    alert(`${name} (${phone})에게 전화하기`);
-  };
-
-  const handleSMS = (phone: string, name: string) => {
-    alert(`${name} (${phone})에게 SMS 보내기`);
   };
 
   const handleForceReturn = async (id: number, kioskId: number, deviceName: string) => {
@@ -200,18 +205,29 @@ export default function OverdueRentalsTab() {
       ) : (
         <Card className="border-2 border-black bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '8%' }} />
+              </colgroup>
               <thead>
                 <tr className="border-b-2 border-black">
                   <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">Go Together</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">설치장소</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">장비 이름</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">장비 종류</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">키오스크명</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">위치</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">시리얼 번호</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">대여시간</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">경과 시간</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">심각도</th>
-                  <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
+                  <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -219,9 +235,15 @@ export default function OverdueRentalsTab() {
                   <tr key={rental.id} className="hover:bg-gray-50">
                     <td className="p-6 text-base">{index + 1}</td>
                     <td className="p-6 text-base font-medium">{rental.kioskName}</td>
-                    <td className="p-6 text-base">{rental.location}</td>
-                    <td className="p-6 text-base font-medium">{rental.deviceName}</td>
-                    <td className="p-6 text-base">{rental.deviceType}</td>
+                    <td className="p-6 text-base">
+                      <div className="line-clamp-3" title={rental.location}>{rental.location}</div>
+                    </td>
+                    <td className="p-6 text-base">
+                      <div className="line-clamp-3 whitespace-pre-line">
+                        {rental.deviceName}{'\n'}
+                        <span className="text-sm text-gray-600">{rental.deviceType}</span>
+                      </div>
+                    </td>
                     <td className="p-6 text-base">{rental.rentalTime}</td>
                     <td className="p-6 text-base">
                       <span className={rental.elapsedHours > 72 ? "text-red-600 font-bold" : "text-yellow-600 font-medium"}>
@@ -231,32 +253,34 @@ export default function OverdueRentalsTab() {
                     <td className="p-6 text-base">
                       {getSeverityBadge(rental.severity)}
                     </td>
-                    <td className="p-6 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="p-6 text-base">
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {visiblePhoneIds.has(rental.id) ? rental.renterPhone : rental.renterPhoneMasked}
+                        </span>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleCall(rental.renterPhone, rental.renterName)}
-                          className="text-blue-600 hover:text-blue-700 text-base"
+                          className="h-8 w-8 p-0"
+                          onClick={() => togglePhoneVisibility(rental.id)}
+                          title={visiblePhoneIds.has(rental.id) ? "연락처 숨기기" : "연락처 보기"}
                         >
-                          <Phone className="h-4 w-4 mr-1" />
-                          전화
+                          {visiblePhoneIds.has(rental.id) ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSMS(rental.renterPhone, rental.renterName)}
-                          className="text-green-600 hover:text-green-700 text-base"
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          SMS
-                        </Button>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex justify-center">
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={() => handleForceReturn(rental.id, rental.kioskId, rental.deviceName)}
                           disabled={forceReturnRental.isPending}
-                          className="text-base"
+                          className="text-sm"
                         >
                           <XCircle className="h-4 w-4 mr-1" />
                           {forceReturnRental.isPending ? "처리 중..." : "강제반납"}

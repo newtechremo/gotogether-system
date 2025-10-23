@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, ClipboardCheck, Edit, Trash2, MoreVertical, Phone, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardCheck, Edit, Trash2, MoreVertical, Phone, MessageSquare, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface KioskDetailPageProps {
@@ -45,6 +45,12 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
   const [isDeviceDialogOpen, setIsDeviceDialogOpen] = useState(false);
   const [isDeviceEditDialogOpen, setIsDeviceEditDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<KioskDevice | null>(null);
+  const [visiblePhoneIds, setVisiblePhoneIds] = useState<Set<number>>(new Set());
+  const [alertDialog, setAlertDialog] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: "",
+    message: "",
+  });
 
   const [examinationFormData, setExaminationFormData] = useState({
     examinationDate: new Date().toISOString().split("T")[0],
@@ -67,7 +73,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     deviceType: "AR_GLASS" as "AR_GLASS" | "BONE_CONDUCTION" | "SMARTPHONE",
     serialNumber: "",
     nfcTagId: "",
-    purchaseDate: "",
+    purchaseDate: new Date().toISOString().split("T")[0],
     notes: "",
   });
 
@@ -211,6 +217,20 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     }
   };
 
+  // 알림 표시 함수
+  const showAlert = (title: string, message: string) => {
+    setAlertDialog({ open: true, title, message });
+  };
+
+  // 전화번호 자동 포맷팅 함수
+  const formatPhoneNumber = (value: string): string => {
+    const numbers = value.replace(/[^\d]/g, "");
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    if (numbers.length <= 10) return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   // 모바일 디바이스 감지
   const isMobileDevice = () => {
     if (typeof window === "undefined") return false;
@@ -244,13 +264,14 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
       refetchExaminations();
       refetch();
-      alert(
+      showAlert(
+        "성공",
         `점검 기록이 성공적으로 추가되었습니다.\n키오스크 상태가 "${
           newStatus === "active" ? "운영중" : "비활성"
         }"으로 변경되었습니다.`
       );
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
     }
   };
 
@@ -268,14 +289,14 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
         deviceType: "AR_GLASS",
         serialNumber: "",
         nfcTagId: "",
-        purchaseDate: "",
+        purchaseDate: new Date().toISOString().split("T")[0],
         notes: "",
       });
       refetchDevices();
       refetch();
-      alert("장비가 성공적으로 등록되었습니다");
+      showAlert("성공", "장비가 성공적으로 등록되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "장비 등록 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "장비 등록 중 오류가 발생했습니다");
     }
   };
 
@@ -309,9 +330,9 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       setEditingDevice(null);
       refetchDevices();
       refetch();
-      alert("장비 정보가 성공적으로 수정되었습니다");
+      showAlert("성공", "장비 정보가 성공적으로 수정되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "장비 수정 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "장비 수정 중 오류가 발생했습니다");
     }
   };
 
@@ -323,9 +344,9 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       await deleteDevice.mutateAsync({ id: deviceId, kioskId });
       refetchDevices();
       refetch();
-      alert("장비가 성공적으로 삭제되었습니다");
+      showAlert("성공", "장비가 성공적으로 삭제되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "장비 삭제 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "장비 삭제 중 오류가 발생했습니다");
     }
   };
 
@@ -342,7 +363,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
 
     // 전화번호 유효성 검사
     if (editFormData.managerPhone && !validatePhoneNumber(editFormData.managerPhone)) {
-      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
       return;
     }
 
@@ -353,9 +374,9 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
       setIsEditDialogOpen(false);
       refetch();
-      alert("키오스크 정보가 성공적으로 수정되었습니다");
+      showAlert("성공", "키오스크 정보가 성공적으로 수정되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "수정 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "수정 중 오류가 발생했습니다");
     }
   };
 
@@ -366,10 +387,10 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
 
     try {
       await deleteKiosk.mutateAsync(kioskId);
-      alert("키오스크가 성공적으로 삭제되었습니다");
-      router.push("/dashboard?tab=gotogether");
+      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
+      router.push("/gotogether");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
     }
   };
 
@@ -381,9 +402,9 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       await forceReturnRental.mutateAsync({ id: rentalId, kioskId });
       refetchRentals();
       refetchDevices();
-      alert("강제 반납이 완료되었습니다");
+      showAlert("성공", "강제 반납이 완료되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다");
     }
   };
 
@@ -392,7 +413,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     if (isMobileDevice()) {
       window.location.href = `tel:${phone}`;
     } else {
-      alert(`연락처: ${phone}\n\n※ 모바일에서는 자동으로 전화 앱이 실행됩니다.`);
+      showAlert("안내", `연락처: ${phone}\n\n※ 모바일에서는 자동으로 전화 앱이 실행됩니다.`);
     }
   };
 
@@ -401,8 +422,21 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     if (isMobileDevice()) {
       window.location.href = `sms:${phone}`;
     } else {
-      alert(`연락처: ${phone}\n\n※ 모바일에서는 자동으로 SMS 앱이 실행됩니다.`);
+      showAlert("안내", `연락처: ${phone}\n\n※ 모바일에서는 자동으로 SMS 앱이 실행됩니다.`);
     }
+  };
+
+  // 연락처 표시 토글
+  const togglePhoneVisibility = (rentalId: number) => {
+    setVisiblePhoneIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(rentalId)) {
+        newSet.delete(rentalId);
+      } else {
+        newSet.add(rentalId);
+      }
+      return newSet;
+    });
   };
 
   if (kioskLoading) {
@@ -421,7 +455,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-lg font-medium text-gray-600">키오스크를 찾을 수 없습니다.</p>
-          <Button onClick={() => router.push("/dashboard?tab=gotogether")} className="mt-4">
+          <Button onClick={() => router.push("/gotogether")} className="mt-4">
             목록으로 돌아가기
           </Button>
         </div>
@@ -434,7 +468,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => router.push("/dashboard?tab=gotogether")}>
+          <Button variant="outline" onClick={() => router.push("/gotogether")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             목록으로
           </Button>
@@ -454,7 +488,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                 <DialogTitle className="text-2xl">키오스크 정보 수정</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleUpdateKiosk} className="space-y-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="name">키오스크 이름 *</Label>
                   <Input
                     id="name"
@@ -464,7 +498,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   />
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="location">설치 장소 *</Label>
                   <Input
                     id="location"
@@ -475,7 +509,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="managerName">담당자명</Label>
                     <Input
                       id="managerName"
@@ -483,18 +517,19 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                       onChange={(e) => setEditFormData({ ...editFormData, managerName: e.target.value })}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="managerPhone">담당자 연락처</Label>
                     <Input
                       id="managerPhone"
                       value={editFormData.managerPhone}
-                      onChange={(e) => setEditFormData({ ...editFormData, managerPhone: e.target.value })}
+                      onChange={(e) => setEditFormData({ ...editFormData, managerPhone: formatPhoneNumber(e.target.value) })}
+                      maxLength={13}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="installationDate">설치일</Label>
                     <Input
                       id="installationDate"
@@ -503,7 +538,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                       onChange={(e) => setEditFormData({ ...editFormData, installationDate: e.target.value })}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="status">상태</Label>
                     <Select value={editFormData.status} onValueChange={(value: any) => setEditFormData({ ...editFormData, status: value })}>
                       <SelectTrigger>
@@ -518,7 +553,7 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   </div>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="notes">비고</Label>
                   <Textarea
                     id="notes"
@@ -845,7 +880,16 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
         <CardContent className="p-0">
           {rentals && rentals.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '13%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b-2 border-black">
                     <th className="p-6 text-left text-lg font-semibold text-black">장비 ID</th>
@@ -858,56 +902,76 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {rentals.map((rental) => (
-                    <tr key={rental.id} className="hover:bg-gray-50">
-                      <td className="p-6 text-base">{rental.deviceId}</td>
-                      <td className="p-6 text-base font-medium">{rental.deviceName}</td>
-                      <td className="p-6 text-base">{getRentalStatusBadge(rental.status)}</td>
-                      <td className="p-6 text-base">
-                        {new Date(rental.rentalDatetime).toLocaleString()}
-                      </td>
-                      <td className="p-6 text-base">
-                        {rental.actualReturnDatetime
-                          ? new Date(rental.actualReturnDatetime).toLocaleString()
-                          : new Date(rental.expectedReturnDatetime).toLocaleString() + " (예정)"}
-                      </td>
-                      <td className="p-6 text-base">
-                        <div className="flex items-center gap-2">
-                          <span>{rental.renterPhoneMasked}</span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleCall(rental.renterPhone)}>
-                                <Phone className="mr-2 h-4 w-4" />
-                                전화걸기
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleSMS(rental.renterPhone)}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                SMS 보내기
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  {rentals.map((rental) => {
+                    const formatDateTime = (dateString: string, isExpected = false) => {
+                      const date = new Date(dateString);
+                      const datePart = date.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      });
+                      const timePart = date.toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                      });
+                      return (
+                        <div className="whitespace-pre-line">
+                          {datePart}{'\n'}{timePart}{isExpected ? ' (예정)' : ''}
                         </div>
-                      </td>
-                      <td className="p-6 text-right">
-                        {(rental.status === "rented" || rental.status === "overdue") && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleForceReturn(rental.id, rental.renterName)}
-                            disabled={forceReturnRental.isPending}
-                            className="text-base"
-                          >
-                            강제반납
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                      );
+                    };
+
+                    return (
+                      <tr key={rental.id} className="hover:bg-gray-50">
+                        <td className="p-6 text-base">{rental.deviceId}</td>
+                        <td className="p-6 text-base font-medium">{rental.deviceName}</td>
+                        <td className="p-6 text-base">{getRentalStatusBadge(rental.status)}</td>
+                        <td className="p-6 text-base">
+                          {formatDateTime(rental.rentalDatetime)}
+                        </td>
+                        <td className="p-6 text-base">
+                          {rental.actualReturnDatetime
+                            ? formatDateTime(rental.actualReturnDatetime)
+                            : formatDateTime(rental.expectedReturnDatetime, true)
+                          }
+                        </td>
+                        <td className="p-6 text-base">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {visiblePhoneIds.has(rental.id) ? rental.renterPhone : rental.renterPhoneMasked}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => togglePhoneVisibility(rental.id)}
+                              title={visiblePhoneIds.has(rental.id) ? "연락처 숨기기" : "연락처 보기"}
+                            >
+                              {visiblePhoneIds.has(rental.id) ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="p-6 text-right">
+                          {(rental.status === "rented" || rental.status === "overdue") && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleForceReturn(rental.id, rental.renterName)}
+                              disabled={forceReturnRental.isPending}
+                              className="text-base"
+                            >
+                              강제반납
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1046,6 +1110,26 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Alert Dialog */}
+      <Dialog open={alertDialog.open} onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              {alertDialog.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-base whitespace-pre-line">{alertDialog.message}</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setAlertDialog({ open: false, title: "", message: "" })}>
+              확인
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

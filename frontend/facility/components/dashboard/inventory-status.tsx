@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 interface DeviceTypeStats {
   deviceType: string;
@@ -20,10 +21,10 @@ interface InventoryStatusProps {
 
 export function InventoryStatus({ devices, isLoading }: InventoryStatusProps) {
   const router = useRouter()
-  const [isNavigating, setIsNavigating] = useState(false)
+  const [loadingDeviceType, setLoadingDeviceType] = useState<string | null>(null)
 
   const handleDeviceTypeClick = (deviceType: string) => {
-    setIsNavigating(true)
+    setLoadingDeviceType(deviceType)
     router.push(`/rentals?tab=rent&deviceType=${encodeURIComponent(deviceType)}`)
   }
 
@@ -56,18 +57,20 @@ export function InventoryStatus({ devices, isLoading }: InventoryStatusProps) {
                   <div className="font-bold text-xl text-black leading-relaxed">
                     {device.deviceType}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {device.available === 0 && (
-                      <span className="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold">품절</span>
+                  <Button
+                    onClick={() => handleDeviceTypeClick(device.deviceType)}
+                    disabled={device.available === 0 || loadingDeviceType !== null}
+                    className="bg-black text-white hover:bg-gray-800 border-2 border-black text-base font-semibold px-4 py-2 min-h-[40px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingDeviceType === device.deviceType ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        로딩 중...
+                      </>
+                    ) : (
+                      "대여"
                     )}
-                    <Button
-                      onClick={() => handleDeviceTypeClick(device.deviceType)}
-                      disabled={device.available === 0 || isNavigating}
-                      className="bg-black text-white hover:bg-gray-800 border-2 border-black text-base font-semibold px-4 py-2 min-h-[40px] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isNavigating ? "이동 중..." : "대여"}
-                    </Button>
-                  </div>
+                  </Button>
                 </div>
 
                 {/* Second row: Stats */}

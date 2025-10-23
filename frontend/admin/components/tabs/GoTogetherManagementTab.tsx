@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, AlertCircle } from "lucide-react";
 
 export default function GoTogetherManagementTab() {
   const router = useRouter();
@@ -23,6 +23,11 @@ export default function GoTogetherManagementTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [loadingDetailId, setLoadingDetailId] = useState<number | null>(null);
+  const [alertDialog, setAlertDialog] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: "",
+    message: "",
+  });
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -30,7 +35,7 @@ export default function GoTogetherManagementTab() {
     location: "",
     managerName: "",
     managerPhone: "",
-    installationDate: "",
+    installationDate: new Date().toISOString().split("T")[0],
     status: "active" as "active" | "inactive" | "maintenance",
     notes: "",
   });
@@ -64,6 +69,20 @@ export default function GoTogetherManagementTab() {
   };
 
 
+  // 알림 표시 함수
+  const showAlert = (title: string, message: string) => {
+    setAlertDialog({ open: true, title, message });
+  };
+
+  // 전화번호 자동 포맷팅 함수
+  const formatPhoneNumber = (value: string): string => {
+    const numbers = value.replace(/[^\d]/g, "");
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    if (numbers.length <= 10) return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   // 전화번호 유효성 검사 함수
   const validatePhoneNumber = (phone: string): boolean => {
     if (!phone) return true; // 선택 필드이므로 빈 값은 허용
@@ -77,7 +96,7 @@ export default function GoTogetherManagementTab() {
 
     // 전화번호 유효성 검사
     if (formData.managerPhone && !validatePhoneNumber(formData.managerPhone)) {
-      alert("올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
       return;
     }
 
@@ -89,14 +108,14 @@ export default function GoTogetherManagementTab() {
         location: "",
         managerName: "",
         managerPhone: "",
-        installationDate: "",
+        installationDate: new Date().toISOString().split("T")[0],
         status: "active",
         notes: "",
       });
       refetch();
-      alert("키오스크 위치가 성공적으로 등록되었습니다");
+      showAlert("성공", "키오스크 위치가 성공적으로 등록되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
     }
   };
 
@@ -113,9 +132,9 @@ export default function GoTogetherManagementTab() {
     try {
       await deleteKiosk.mutateAsync(id);
       refetch();
-      alert("키오스크가 성공적으로 삭제되었습니다");
+      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
     }
   };
 
@@ -171,21 +190,24 @@ export default function GoTogetherManagementTab() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="managerName">담당자명</Label>
+                  <Label htmlFor="managerName">담당자명 *</Label>
                   <Input
                     id="managerName"
                     value={formData.managerName}
                     onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
                     placeholder="김영화"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="managerPhone">담당자 연락처</Label>
+                  <Label htmlFor="managerPhone">담당자 연락처 *</Label>
                   <Input
                     id="managerPhone"
                     value={formData.managerPhone}
-                    onChange={(e) => setFormData({ ...formData, managerPhone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, managerPhone: formatPhoneNumber(e.target.value) })}
                     placeholder="010-1234-5678"
+                    maxLength={13}
+                    required
                   />
                 </div>
               </div>
@@ -279,42 +301,44 @@ export default function GoTogetherManagementTab() {
               <colgroup>
                 <col style={{ width: '5%' }} />
                 <col style={{ width: '15%' }} />
-                <col style={{ width: '25%' }} />
+                <col style={{ width: '30%' }} />
                 <col style={{ width: '10%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '25%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '10%' }} />
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-black">
-                  <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
+                  <th className="p-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">키오스크명</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">위치</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
                   <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
-                  <th className="p-6 text-right text-lg font-semibold text-black">작업</th>
+                  <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredKiosks.map((kiosk, index) => (
-                  <tr key={kiosk.id} className="hover:bg-gray-50">
-                    <td className="p-6 text-base truncate">
+                  <tr key={kiosk.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetail(kiosk.id)}>
+                    <td className="p-6 text-base">
                       {(page - 1) * 10 + index + 1}
                     </td>
                     <td className="p-6 text-base font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
-                    <td className="p-6 text-base truncate" title={kiosk.location}>{kiosk.location}</td>
+                    <td className="p-6 text-sm" title={kiosk.location}>
+                      <div className="line-clamp-2">{kiosk.location}</div>
+                    </td>
                     <td className="p-6 text-base truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
-                    <td className="p-6 text-base truncate" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
+                    <td className="p-6 text-base" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
                     <td className="p-6 text-base">{getStatusBadge(kiosk.status)}</td>
-                    <td className="p-6 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="p-6" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewDetail(kiosk.id)}
                           disabled={loadingDetailId === kiosk.id}
-                          className="text-base"
+                          className="text-sm"
                         >
                           {loadingDetailId === kiosk.id ? "로딩 중..." : "상세"}
                         </Button>
@@ -323,7 +347,7 @@ export default function GoTogetherManagementTab() {
                           size="sm"
                           onClick={() => handleDeleteKiosk(kiosk.id, kiosk.name)}
                           disabled={loadingDetailId !== null}
-                          className="text-base"
+                          className="text-sm"
                         >
                           삭제
                         </Button>
@@ -359,6 +383,26 @@ export default function GoTogetherManagementTab() {
           </Button>
         </div>
       )}
+
+      {/* Alert Dialog */}
+      <Dialog open={alertDialog.open} onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              {alertDialog.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-base whitespace-pre-line">{alertDialog.message}</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setAlertDialog({ open: false, title: "", message: "" })}>
+              확인
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

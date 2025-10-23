@@ -101,12 +101,21 @@ export default function RealtimeRentalsTab() {
       {kiosks.length > 0 ? (
         <div className="bg-white rounded-lg border-2 border-black overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '6%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '12%' }} />
+              </colgroup>
               <thead className="bg-gray-50 border-b-2 border-black">
                 <tr>
-                  <th className="px-6 py-3 text-left text-base font-semibold text-gray-900 w-20">번호</th>
-                  <th className="px-6 py-3 text-left text-base font-semibold text-gray-900">이름</th>
-                  <th className="px-6 py-3 text-left text-base font-semibold text-gray-900">설치장소</th>
+                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">번호</th>
+                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">이름</th>
+                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">위치</th>
                   <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">AR 글라스</th>
                   <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">골전도 이어폰</th>
                   <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">스마트폰</th>
@@ -122,9 +131,9 @@ export default function RealtimeRentalsTab() {
                       onClick={() => handleKioskClick(kiosk.id)}
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <td className="px-6 py-4 text-base text-gray-600">{index + 1}</td>
-                      <td className="px-6 py-4 text-base font-medium text-gray-900">{kiosk.name}</td>
-                      <td className="px-6 py-4 text-base text-gray-600">{kiosk.location}</td>
+                      <td className="px-6 py-4 text-center text-base text-gray-600">{index + 1}</td>
+                      <td className="px-6 py-4 text-center text-base font-medium text-gray-900">{kiosk.name}</td>
+                      <td className="px-6 py-4 text-center text-base text-gray-600">{kiosk.location}</td>
                       <td className="px-6 py-4 text-center">
                         <span className={`text-base font-medium ${stats.arGlass.rented > 0 ? "text-blue-600" : "text-gray-600"}`}>
                           {stats.arGlass.rented}

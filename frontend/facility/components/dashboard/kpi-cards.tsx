@@ -33,7 +33,7 @@ export function KPICards({
     },
     {
       title: "오늘 처리",
-      value: `${todayRentals}/${todayReturns}`,
+      value: `대여 ${todayRentals} / 반납 ${todayReturns}`,
       description: "오늘 대여/반납 건수",
     },
   ]
