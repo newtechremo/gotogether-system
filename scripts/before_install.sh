@@ -12,11 +12,16 @@ echo "Cleaning up temporary files..."
 # Remove temporary data files
 rm -f /home/ec2-user/gotogether-system/backend/exported-data.json
 rm -f /home/ec2-user/gotogether-system/backend/imported-data.json
-# Remove temporary script files
-rm -f /home/ec2-user/gotogether-system/backend/create-schema-remote.ts
+rm -f /home/ec2-user/gotogether-system/backend/*-data.json
+# Remove temporary script files (all common patterns)
+rm -f /home/ec2-user/gotogether-system/backend/create-*.ts
+rm -f /home/ec2-user/gotogether-system/backend/import-*.ts
+rm -f /home/ec2-user/gotogether-system/backend/export-*.ts
 rm -f /home/ec2-user/gotogether-system/backend/fix-*.ts
 rm -f /home/ec2-user/gotogether-system/backend/test-*.ts
 rm -f /home/ec2-user/gotogether-system/backend/temp-*.ts
+rm -f /home/ec2-user/gotogether-system/backend/migrate-*.ts
+rm -f /home/ec2-user/gotogether-system/backend/setup-*.ts
 # Remove log and backup files
 rm -f /home/ec2-user/gotogether-system/backend/*.log
 rm -f /home/ec2-user/gotogether-system/backend/.env.backup
