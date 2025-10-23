@@ -117,8 +117,26 @@ pm2 save
 
 echo "✓ Admin frontend started on port 5174"
 
-# Facility frontend는 정적 파일이므로 Nginx가 직접 서빙 (시작 불필요)
-echo "✓ Facility frontend served by Nginx (static files)"
+# Start Facility Frontend (SSR mode)
+echo "Starting facility frontend..."
+cd /home/ec2-user/gotogether-system/frontend/facility
+
+# Stop existing PM2 process if running
+pm2 delete gotogether-facility 2>/dev/null || echo "No existing facility process to delete"
+
+# Start with PM2
+PORT=5173 pm2 start npm \
+    --name gotogether-facility \
+    -- start \
+    --max-memory-restart 500M \
+    --log /home/ec2-user/logs/gotogether-facility.log \
+    --error /home/ec2-user/logs/gotogether-facility-error.log \
+    --time
+
+# Save PM2 process list
+pm2 save
+
+echo "✓ Facility frontend started on port 5173"
 
 # Show all PM2 processes
 pm2 list

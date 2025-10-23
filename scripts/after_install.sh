@@ -81,19 +81,8 @@ npm run build || { log_error "Facility build failed"; exit 1; }
 sudo mkdir -p /var/www/gotogether-facility
 sudo chown -R ec2-user:ec2-user /var/www/gotogether-facility
 
-# Copy build output
-echo "Copying facility build files..."
-if [ -d "out" ]; then
-    echo "Found out directory (static export), copying..."
-    sudo rm -rf /var/www/gotogether-facility/*
-    sudo cp -r out/* /var/www/gotogether-facility/
-    sudo chown -R nginx:nginx /var/www/gotogether-facility
-    sudo chmod -R 755 /var/www/gotogether-facility
-    echo "Facility build files copied successfully"
-else
-    log_error "No out directory found for facility (static export failed)"
-    ls -la
-    exit 1
-fi
+# Facility도 SSR 모드로 실행 (API 라우트 때문)
+echo "Facility will run in SSR mode - no file copy needed"
+echo "Will be started by PM2 in start_application.sh"
 
 echo "=== Build completed successfully! ==="
