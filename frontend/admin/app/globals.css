@@ -165,3 +165,10 @@ textarea:focus-visible {
 .text-4xl {
   font-size: 38px;
 }
+
+/* Hide Next.js preload indicator and debug tools */
+#__next-build-watcher,
+nextjs-portal,
+[data-nextjs-scroll-focus-boundary] {
+  display: none !important;
+}

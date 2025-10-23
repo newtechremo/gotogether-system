@@ -53,6 +53,15 @@ fi
 # Admin Frontend
 echo "=== Building admin frontend ==="
 cd /home/ec2-user/gotogether-system/frontend/admin || exit 1
+
+# Create production environment file
+echo "Creating admin .env.production..."
+cat > .env.production << 'EOF'
+# Production environment variables for Admin Frontend
+NEXT_PUBLIC_API_URL=http://gt-api.remo.re.kr
+NODE_ENV=production
+EOF
+
 echo "Installing admin dependencies..."
 npm install --production=false || { log_error "Admin npm install failed"; exit 1; }
 
@@ -71,6 +80,15 @@ echo "Will be started by PM2 in start_application.sh"
 # Facility Frontend
 echo "=== Building facility frontend ==="
 cd /home/ec2-user/gotogether-system/frontend/facility || exit 1
+
+# Create production environment file
+echo "Creating facility .env.production..."
+cat > .env.production << 'EOF'
+# Production environment variables for Facility Frontend
+NEXT_PUBLIC_API_URL=http://gt-api.remo.re.kr
+NODE_ENV=production
+EOF
+
 echo "Installing facility dependencies..."
 npm install --production=false || { log_error "Facility npm install failed"; exit 1; }
 
