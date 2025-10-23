@@ -81,7 +81,9 @@
       "Bash(grep:*)",
       "Bash(git push:*)",
       "Bash(ssh:*)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(aws rds describe-db-instances:*)",
+      "Bash(aws ec2 authorize-security-group-ingress:*)"
     ],
     "deny": [],
     "ask": []
