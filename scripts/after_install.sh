@@ -66,17 +66,15 @@ sudo chown -R ec2-user:ec2-user /var/www/gotogether-admin
 
 # Copy build output
 echo "Copying admin build files..."
-if [ -d ".next" ]; then
-    echo "Found .next directory, copying..."
+if [ -d "out" ]; then
+    echo "Found out directory (static export), copying..."
     sudo rm -rf /var/www/gotogether-admin/*
-    sudo cp -r .next /var/www/gotogether-admin/
-    sudo cp -r public /var/www/gotogether-admin/ 2>/dev/null || echo "No public directory"
-    sudo cp package.json /var/www/gotogether-admin/
-    sudo cp next.config.* /var/www/gotogether-admin/ 2>/dev/null || echo "No next.config file"
+    sudo cp -r out/* /var/www/gotogether-admin/
     sudo chown -R nginx:nginx /var/www/gotogether-admin
+    sudo chmod -R 755 /var/www/gotogether-admin
     echo "Admin build files copied successfully"
 else
-    log_error "No .next directory found for admin"
+    log_error "No out directory found for admin (static export failed)"
     ls -la
     exit 1
 fi
@@ -96,17 +94,15 @@ sudo chown -R ec2-user:ec2-user /var/www/gotogether-facility
 
 # Copy build output
 echo "Copying facility build files..."
-if [ -d ".next" ]; then
-    echo "Found .next directory, copying..."
+if [ -d "out" ]; then
+    echo "Found out directory (static export), copying..."
     sudo rm -rf /var/www/gotogether-facility/*
-    sudo cp -r .next /var/www/gotogether-facility/
-    sudo cp -r public /var/www/gotogether-facility/ 2>/dev/null || echo "No public directory"
-    sudo cp package.json /var/www/gotogether-facility/
-    sudo cp next.config.* /var/www/gotogether-facility/ 2>/dev/null || echo "No next.config file"
+    sudo cp -r out/* /var/www/gotogether-facility/
     sudo chown -R nginx:nginx /var/www/gotogether-facility
+    sudo chmod -R 755 /var/www/gotogether-facility
     echo "Facility build files copied successfully"
 else
-    log_error "No .next directory found for facility"
+    log_error "No out directory found for facility (static export failed)"
     ls -la
     exit 1
 fi
