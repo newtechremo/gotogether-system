@@ -106,11 +106,10 @@ pm2 delete gotogether-admin 2>/dev/null || echo "No existing admin process to de
 # Start with PM2
 PORT=5174 pm2 start npm \
     --name gotogether-admin \
-    -- start \
     --max-memory-restart 500M \
     --log /home/ec2-user/logs/gotogether-admin.log \
     --error /home/ec2-user/logs/gotogether-admin-error.log \
-    --time
+    -- start
 
 # Save PM2 process list
 pm2 save
@@ -127,11 +126,10 @@ pm2 delete gotogether-facility 2>/dev/null || echo "No existing facility process
 # Start with PM2
 PORT=5173 pm2 start npm \
     --name gotogether-facility \
-    -- start \
     --max-memory-restart 500M \
     --log /home/ec2-user/logs/gotogether-facility.log \
     --error /home/ec2-user/logs/gotogether-facility-error.log \
-    --time
+    -- start
 
 # Save PM2 process list
 pm2 save
