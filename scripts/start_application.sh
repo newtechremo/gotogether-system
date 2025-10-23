@@ -95,3 +95,38 @@ else
     pm2 logs gotogether-backend --lines 50 --nostream
     exit 1
 fi
+
+# Start Admin Frontend (SSR mode)
+echo "Starting admin frontend..."
+cd /home/ec2-user/gotogether-system/frontend/admin
+
+# Stop existing PM2 process if running
+pm2 delete gotogether-admin 2>/dev/null || echo "No existing admin process to delete"
+
+# Start with PM2
+PORT=5174 pm2 start npm \
+    --name gotogether-admin \
+    -- start \
+    --max-memory-restart 500M \
+    --log /home/ec2-user/logs/gotogether-admin.log \
+    --error /home/ec2-user/logs/gotogether-admin-error.log \
+    --time
+
+# Save PM2 process list
+pm2 save
+
+echo "✓ Admin frontend started on port 5174"
+
+# Facility frontend는 정적 파일이므로 Nginx가 직접 서빙 (시작 불필요)
+echo "✓ Facility frontend served by Nginx (static files)"
+
+# Show all PM2 processes
+pm2 list
+
+# Reload Nginx
+if command -v nginx &> /dev/null; then
+    echo "Reloading Nginx..."
+    sudo systemctl reload nginx || echo "Nginx reload failed, but continuing..."
+fi
+
+echo "=== All applications started successfully! ==="

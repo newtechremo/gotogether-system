@@ -78,7 +78,8 @@
       "Bash(\"BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true\" )",
       "Bash(aws s3api put-bucket-versioning:*)",
       "Bash(timeout 30 npm run start:dev:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

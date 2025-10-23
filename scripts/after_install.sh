@@ -64,20 +64,9 @@ echo "Setting up Nginx directories..."
 sudo mkdir -p /var/www/gotogether-admin
 sudo chown -R ec2-user:ec2-user /var/www/gotogether-admin
 
-# Copy build output
-echo "Copying admin build files..."
-if [ -d "out" ]; then
-    echo "Found out directory (static export), copying..."
-    sudo rm -rf /var/www/gotogether-admin/*
-    sudo cp -r out/* /var/www/gotogether-admin/
-    sudo chown -R nginx:nginx /var/www/gotogether-admin
-    sudo chmod -R 755 /var/www/gotogether-admin
-    echo "Admin build files copied successfully"
-else
-    log_error "No out directory found for admin (static export failed)"
-    ls -la
-    exit 1
-fi
+# Admin은 SSR 모드로 실행 (동적 라우트 때문)
+echo "Admin will run in SSR mode - no file copy needed"
+echo "Will be started by PM2 in start_application.sh"
 
 # Facility Frontend
 echo "=== Building facility frontend ==="
