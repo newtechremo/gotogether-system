@@ -28,6 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, ClipboardCheck, Edit, Trash2, MoreVertical, Phone, MessageSquare, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm";
+import { toast } from "sonner";
 
 interface KioskDetailPageProps {
   params: Promise<{
@@ -51,6 +53,20 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
     title: "",
     message: "",
   });
+  const [confirmDeleteKioskDialog, setConfirmDeleteKioskDialog] = useState<{
+    open: boolean;
+    name: string;
+  }>({ open: false, name: "" });
+  const [confirmDeleteDeviceDialog, setConfirmDeleteDeviceDialog] = useState<{
+    open: boolean;
+    id: number;
+    serialNumber: string;
+  }>({ open: false, id: 0, serialNumber: "" });
+  const [confirmForceReturnDialog, setConfirmForceReturnDialog] = useState<{
+    open: boolean;
+    id: number;
+    renterName: string;
+  }>({ open: false, id: 0, renterName: "" });
 
   const [examinationFormData, setExaminationFormData] = useState({
     examinationDate: new Date().toISOString().split("T")[0],
@@ -264,14 +280,15 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
       refetchExaminations();
       refetch();
-      showAlert(
-        "성공",
-        `점검 기록이 성공적으로 추가되었습니다.\n키오스크 상태가 "${
+      toast.success("성공", {
+        description: `점검 기록이 성공적으로 추가되었습니다.\n키오스크 상태가 "${
           newStatus === "active" ? "운영중" : "비활성"
-        }"으로 변경되었습니다.`
-      );
+        }"으로 변경되었습니다.`,
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -294,9 +311,13 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
       refetchDevices();
       refetch();
-      showAlert("성공", "장비가 성공적으로 등록되었습니다");
+      toast.success("성공", {
+        description: "장비가 성공적으로 등록되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "장비 등록 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "장비 등록 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -330,23 +351,33 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       setEditingDevice(null);
       refetchDevices();
       refetch();
-      showAlert("성공", "장비 정보가 성공적으로 수정되었습니다");
+      toast.success("성공", {
+        description: "장비 정보가 성공적으로 수정되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "장비 수정 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "장비 수정 중 오류가 발생했습니다",
+      });
     }
   };
 
   // 장비 삭제
-  const handleDeleteDevice = async (deviceId: number, serialNumber: string) => {
-    if (!confirm(`정말 "${serialNumber}" 장비를 삭제하시겠습니까?`)) return;
+  const handleDeleteDevice = (deviceId: number, serialNumber: string) => {
+    setConfirmDeleteDeviceDialog({ open: true, id: deviceId, serialNumber });
+  };
 
+  const executeDeleteDevice = async () => {
     try {
-      await deleteDevice.mutateAsync({ id: deviceId, kioskId });
+      await deleteDevice.mutateAsync({ id: confirmDeleteDeviceDialog.id, kioskId });
       refetchDevices();
       refetch();
-      showAlert("성공", "장비가 성공적으로 삭제되었습니다");
+      toast.success("성공", {
+        description: "장비가 성공적으로 삭제되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "장비 삭제 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "장비 삭제 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -363,7 +394,9 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
 
     // 전화번호 유효성 검사
     if (editFormData.managerPhone && !validatePhoneNumber(editFormData.managerPhone)) {
-      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      toast.error("입력 오류", {
+        description: "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678",
+      });
       return;
     }
 
@@ -374,37 +407,53 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
       });
       setIsEditDialogOpen(false);
       refetch();
-      showAlert("성공", "키오스크 정보가 성공적으로 수정되었습니다");
+      toast.success("성공", {
+        description: "키오스크 정보가 성공적으로 수정되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "수정 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "수정 중 오류가 발생했습니다",
+      });
     }
   };
 
   // 키오스크 삭제
-  const handleDeleteKiosk = async () => {
+  const handleDeleteKiosk = () => {
     if (!kiosk) return;
-    if (!confirm(`정말 "${kiosk.name}" 키오스크를 삭제하시겠습니까?`)) return;
+    setConfirmDeleteKioskDialog({ open: true, name: kiosk.name });
+  };
 
+  const executeDeleteKiosk = async () => {
     try {
       await deleteKiosk.mutateAsync(kioskId);
-      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
+      toast.success("성공", {
+        description: "키오스크가 성공적으로 삭제되었습니다",
+      });
       router.push("/gotogether");
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다",
+      });
     }
   };
 
   // 강제 반납 처리
-  const handleForceReturn = async (rentalId: number, renterName: string) => {
-    if (!confirm(`"${renterName}"님의 대여를 강제 반납하시겠습니까?`)) return;
+  const handleForceReturn = (rentalId: number, renterName: string) => {
+    setConfirmForceReturnDialog({ open: true, id: rentalId, renterName });
+  };
 
+  const executeForceReturn = async () => {
     try {
-      await forceReturnRental.mutateAsync({ id: rentalId, kioskId });
+      await forceReturnRental.mutateAsync({ id: confirmForceReturnDialog.id, kioskId });
       refetchRentals();
       refetchDevices();
-      showAlert("성공", "강제 반납이 완료되었습니다");
+      toast.success("성공", {
+        description: "강제 반납이 완료되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -1130,6 +1179,39 @@ export default function KioskDetailPage({ params }: KioskDetailPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialogConfirm
+        open={confirmDeleteKioskDialog.open}
+        onOpenChange={(open) => setConfirmDeleteKioskDialog({ ...confirmDeleteKioskDialog, open })}
+        title="키오스크 삭제 확인"
+        description={`정말 "${confirmDeleteKioskDialog.name}" 키오스크를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={executeDeleteKiosk}
+        variant="destructive"
+      />
+
+      <AlertDialogConfirm
+        open={confirmDeleteDeviceDialog.open}
+        onOpenChange={(open) => setConfirmDeleteDeviceDialog({ ...confirmDeleteDeviceDialog, open })}
+        title="장비 삭제 확인"
+        description={`정말 "${confirmDeleteDeviceDialog.serialNumber}" 장비를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={executeDeleteDevice}
+        variant="destructive"
+      />
+
+      <AlertDialogConfirm
+        open={confirmForceReturnDialog.open}
+        onOpenChange={(open) => setConfirmForceReturnDialog({ ...confirmForceReturnDialog, open })}
+        title="강제 반납 확인"
+        description={`"${confirmForceReturnDialog.renterName}"님의 대여를 강제 반납하시겠습니까?`}
+        confirmText="강제 반납"
+        cancelText="취소"
+        onConfirm={executeForceReturn}
+        variant="destructive"
+      />
     </div>
   );
 }

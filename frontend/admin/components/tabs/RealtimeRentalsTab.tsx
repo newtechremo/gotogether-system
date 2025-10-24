@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { Clock, Calendar } from "lucide-react";
 import { useKiosks, type Kiosk } from "@/lib/hooks/useKiosks";
 import { useRouter } from "next/navigation";
@@ -98,28 +99,35 @@ export default function RealtimeRentalsTab() {
       </div>
 
       {/* 키오스크 목록 테이블 */}
-      {kiosks.length > 0 ? (
-        <div className="bg-white rounded-lg border-2 border-black overflow-hidden">
+      {kiosks.length === 0 ? (
+        <Card className="border-2 border-black bg-white">
+          <div className="p-12 text-center text-gray-500">
+            <p className="text-lg mb-2">등록된 키오스크가 없습니다</p>
+            <p className="text-sm text-gray-400">Go Together 관리 탭에서 키오스크를 등록하세요</p>
+          </div>
+        </Card>
+      ) : (
+        <Card className="border-2 border-black bg-white">
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '6%' }} />
-                <col style={{ width: '16%' }} />
-                <col style={{ width: '25%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '24%' }} />
                 <col style={{ width: '13%' }} />
                 <col style={{ width: '15%' }} />
+                <col style={{ width: '14%' }} />
                 <col style={{ width: '13%' }} />
-                <col style={{ width: '12%' }} />
               </colgroup>
               <thead className="bg-gray-50 border-b-2 border-black">
                 <tr>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">번호</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">이름</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">위치</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">AR 글라스</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">골전도 이어폰</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">스마트폰</th>
-                  <th className="px-6 py-3 text-center text-base font-semibold text-gray-900">상태</th>
+                  <th className="px-3 py-6 text-center text-lg font-semibold text-gray-900">번호</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">이름</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">위치</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">AR 글라스</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">골전도 이어폰</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">스마트폰</th>
+                  <th className="px-4 py-6 text-center text-lg font-semibold text-gray-900">상태</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -131,45 +139,38 @@ export default function RealtimeRentalsTab() {
                       onClick={() => handleKioskClick(kiosk.id)}
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <td className="px-6 py-4 text-center text-base text-gray-600">{index + 1}</td>
-                      <td className="px-6 py-4 text-center text-base font-medium text-gray-900">{kiosk.name}</td>
-                      <td className="px-6 py-4 text-center text-base text-gray-600">{kiosk.location}</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 py-4 text-center text-base text-gray-600">{index + 1}</td>
+                      <td className="px-4 py-4 text-center text-base font-medium text-gray-900">{kiosk.name}</td>
+                      <td className="px-4 py-4 text-center text-base text-gray-600">{kiosk.location}</td>
+                      <td className="px-4 py-4 text-center">
                         <span className={`text-base font-medium ${stats.arGlass.rented > 0 ? "text-blue-600" : "text-gray-600"}`}>
                           {stats.arGlass.rented}
                         </span>
                         <span className="text-base text-gray-400 mx-1">/</span>
                         <span className="text-base text-gray-600">{stats.arGlass.total}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-4 text-center">
                         <span className={`text-base font-medium ${stats.boneConduction.rented > 0 ? "text-blue-600" : "text-gray-600"}`}>
                           {stats.boneConduction.rented}
                         </span>
                         <span className="text-base text-gray-400 mx-1">/</span>
                         <span className="text-base text-gray-600">{stats.boneConduction.total}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-4 text-center">
                         <span className={`text-base font-medium ${stats.smartphone.rented > 0 ? "text-blue-600" : "text-gray-600"}`}>
                           {stats.smartphone.rented}
                         </span>
                         <span className="text-base text-gray-400 mx-1">/</span>
                         <span className="text-base text-gray-600">{stats.smartphone.total}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">{getStatusBadge(kiosk.status)}</td>
+                      <td className="px-4 py-4 text-center">{getStatusBadge(kiosk.status)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg border-2 border-black p-12">
-          <div className="text-center text-gray-500">
-            <p className="text-lg mb-2">등록된 키오스크가 없습니다</p>
-            <p className="text-sm text-gray-400">Go Together 관리 탭에서 키오스크를 등록하세요</p>
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* 안내 메시지 */}

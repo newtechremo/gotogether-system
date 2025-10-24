@@ -2,6 +2,8 @@
 import { useState, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm"
+import { toast } from "sonner"
 import { EditDeviceDialog } from "./edit-device-dialog"
 import { useDeleteDevice } from "@/lib/hooks/useDevices"
 import type { DeviceItem } from "@/lib/api/device.service"
@@ -34,6 +36,8 @@ const deviceTypeLabels = {
 export function DeviceTable({ devices }: DeviceTableProps) {
   const [editingDevice, setEditingDevice] = useState<DeviceItem | null>(null)
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>("전체")
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [deviceToDelete, setDeviceToDelete] = useState<{ id: number; deviceCode: string } | null>(null)
   const deleteDevice = useDeleteDevice()
 
   // Get unique device types from devices
@@ -57,8 +61,14 @@ export function DeviceTable({ devices }: DeviceTableProps) {
   }, [devices, selectedDeviceType])
 
   const handleDelete = (id: number, deviceCode: string) => {
-    if (confirm(`기기 "${deviceCode}"를 삭제하시겠습니까?`)) {
-      deleteDevice.mutate(id)
+    setDeviceToDelete({ id, deviceCode })
+    setConfirmDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (deviceToDelete) {
+      deleteDevice.mutate(deviceToDelete.id)
+      setDeviceToDelete(null)
     }
   }
 
@@ -155,6 +165,17 @@ export function DeviceTable({ devices }: DeviceTableProps) {
       </Card>
 
       {editingDevice && <EditDeviceDialog device={editingDevice} onClose={() => setEditingDevice(null)} />}
+
+      <AlertDialogConfirm
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        title="기기 삭제"
+        description={`기기 "${deviceToDelete?.deviceCode}"를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={handleConfirmDelete}
+        variant="destructive"
+      />
     </>
   )
 }

@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Search, ChevronLeft, ChevronRight, Eye, Plus, ClipboardCheck, AlertCircle } from "lucide-react";
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm";
+import { toast } from "sonner";
 
 export default function KiosksPage() {
   const [page, setPage] = useState(1);
@@ -34,6 +36,11 @@ export default function KiosksPage() {
     title: "",
     message: "",
   });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    id: number;
+    name: string;
+  }>({ open: false, id: 0, name: "" });
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -126,18 +133,24 @@ export default function KiosksPage() {
 
     // 필수 입력 검증
     if (!formData.managerName.trim()) {
-      showAlert("입력 오류", "담당자명을 입력해주세요.");
+      toast.error("입력 오류", {
+        description: "담당자명을 입력해주세요.",
+      });
       return;
     }
 
     if (!formData.managerPhone.trim()) {
-      showAlert("입력 오류", "담당자 연락처를 입력해주세요.");
+      toast.error("입력 오류", {
+        description: "담당자 연락처를 입력해주세요.",
+      });
       return;
     }
 
     // 전화번호 유효성 검사
     if (!validatePhoneNumber(formData.managerPhone)) {
-      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      toast.error("입력 오류", {
+        description: "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678",
+      });
       return;
     }
 
@@ -154,9 +167,13 @@ export default function KiosksPage() {
         notes: "",
       });
       refetch();
-      showAlert("성공", "키오스크 위치가 성공적으로 등록되었습니다");
+      toast.success("성공", {
+        description: "키오스크 위치가 성공적으로 등록되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "등록 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -178,9 +195,13 @@ export default function KiosksPage() {
         status: "normal",
         notes: "",
       });
-      showAlert("성공", "점검 기록이 성공적으로 추가되었습니다");
+      toast.success("성공", {
+        description: "점검 기록이 성공적으로 추가되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "점검 기록 추가 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -191,15 +212,21 @@ export default function KiosksPage() {
   };
 
   // 키오스크 삭제
-  const handleDeleteKiosk = async (id: number, name: string) => {
-    if (!confirm(`정말 "${name}" 키오스크를 삭제하시겠습니까?`)) return;
+  const handleDeleteKiosk = (id: number, name: string) => {
+    setConfirmDialog({ open: true, id, name });
+  };
 
+  const executeDeleteKiosk = async () => {
     try {
-      await deleteKiosk.mutateAsync(id);
+      await deleteKiosk.mutateAsync(confirmDialog.id);
       refetch();
-      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
+      toast.success("성공", {
+        description: "키오스크가 성공적으로 삭제되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -673,6 +700,17 @@ export default function KiosksPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialogConfirm
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title="키오스크 삭제 확인"
+        description={`정말 "${confirmDialog.name}" 키오스크를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={executeDeleteKiosk}
+        variant="destructive"
+      />
     </div>
   );
 }

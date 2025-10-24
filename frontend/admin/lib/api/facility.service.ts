@@ -95,7 +95,32 @@ export const facilityService = {
   },
 
   async resetPassword(id: number, data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
-    const response = await apiClient.post<ResetPasswordResponse>('/admin/facilities/' + id + '/reset-password', data);
-    return response.data;
+    console.log('[API] 비밀번호 재설정 요청:', {
+      url: '/admin/facilities/' + id + '/reset-password',
+      facilityId: id,
+      requestData: data
+    });
+
+    try {
+      const response = await apiClient.post<ResetPasswordResponse>('/admin/facilities/' + id + '/reset-password', data);
+
+      console.log('[API] 비밀번호 재설정 응답 받음:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('[API] 비밀번호 재설정 에러:', {
+        error,
+        response: error.response,
+        responseData: error.response?.data,
+        status: error.response?.status,
+        message: error.message
+      });
+      throw error;
+    }
   },
 };

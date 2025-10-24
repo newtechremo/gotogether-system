@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, KeyRound } from "lucide-react";
 import type { Facility, CreateFacilityRequest, UpdateFacilityRequest } from "@/lib/api/facility.service";
 import { ResetPasswordModal } from "@/components/facilities/reset-password-modal";
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm";
+import { toast } from "sonner";
 
 export default function FacilitiesPage() {
   return (
@@ -30,6 +32,11 @@ function FacilitiesContent() {
   const [editingFacility, setEditingFacility] = useState<Facility | null>(null);
   const [resettingPasswordFacility, setResettingPasswordFacility] = useState<Facility | null>(null);
   const [passwordError, setPasswordError] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    id: number;
+    name: string;
+  }>({ open: false, id: 0, name: "" });
 
   const { data: facilitiesData, isLoading } = useFacilities(page, 10, search);
   const createFacility = useCreateFacility();
@@ -101,8 +108,19 @@ function FacilitiesContent() {
   };
 
   const handleDeleteFacility = (id: number, name: string) => {
-    if (confirm(`"${name}" 시설을 삭제하시겠습니까?`)) {
-      deleteFacility.mutate(id);
+    setConfirmDialog({ open: true, id, name });
+  };
+
+  const executeDeleteFacility = async () => {
+    try {
+      await deleteFacility.mutateAsync(confirmDialog.id);
+      toast.success("삭제 완료", {
+        description: "시설이 성공적으로 삭제되었습니다",
+      });
+    } catch (error: any) {
+      toast.error("삭제 실패", {
+        description: error.response?.data?.error?.message || "시설 삭제 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -260,39 +278,39 @@ function FacilitiesContent() {
                 </colgroup>
                 <thead>
                   <tr className="border-b-2 border-black">
-                    <th className="p-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">시설코드</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">시설명</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">아이디</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
-                    <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
-                    <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
+                    <th className="px-3 py-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">시설코드</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">시설명</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">아이디</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">담당자</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">연락처</th>
+                    <th className="px-4 py-6 text-left text-lg font-semibold text-black">상태</th>
+                    <th className="px-3 py-6 text-center text-lg font-semibold text-black">작업</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {facilitiesData.data.items.map((facility, index) => (
                     <tr key={facility.id} className="hover:bg-gray-50">
-                      <td className="p-6 text-base">
+                      <td className="px-3 py-4 text-base">
                         {(facilitiesData.data.page - 1) * facilitiesData.data.limit + index + 1}
                       </td>
-                      <td className="p-6 text-base font-medium truncate" title={facility.facilityCode}>{facility.facilityCode}</td>
-                      <td className="p-6 text-base font-medium" title={facility.facilityName}>
+                      <td className="px-4 py-4 text-base font-medium truncate" title={facility.facilityCode}>{facility.facilityCode}</td>
+                      <td className="px-4 py-4 text-base font-medium" title={facility.facilityName}>
                         <div className="line-clamp-2">{facility.facilityName}</div>
                       </td>
-                      <td className="p-6 text-base" title={facility.username}>
+                      <td className="px-4 py-4 text-base" title={facility.username}>
                         <div className="line-clamp-2 break-all">{facility.username}</div>
                       </td>
-                      <td className="p-6 text-base truncate" title={facility.managerName || "-"}>{facility.managerName || "-"}</td>
-                      <td className="p-6 text-base truncate" title={facility.managerPhone || "-"}>{facility.managerPhone || "-"}</td>
-                      <td className="p-6 text-base">
+                      <td className="px-4 py-4 text-base truncate" title={facility.managerName || "-"}>{facility.managerName || "-"}</td>
+                      <td className="px-4 py-4 text-base truncate" title={facility.managerPhone || "-"}>{facility.managerPhone || "-"}</td>
+                      <td className="px-4 py-4 text-base">
                         <Badge className={facility.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                           {facility.isActive ? "활성" : "비활성"}
                         </Badge>
                       </td>
-                      <td className="p-6">
+                      <td className="px-3 py-4">
                         <div className="flex justify-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setEditingFacility(facility)} className="text-base">
+                          <Button variant="outline" size="sm" onClick={() => setEditingFacility(facility)} className="text-sm">
                             수정
                           </Button>
                           <Button
@@ -423,6 +441,17 @@ function FacilitiesContent() {
             onOpenChange={(open) => !open && setResettingPasswordFacility(null)}
           />
         )}
+
+        <AlertDialogConfirm
+          open={confirmDialog.open}
+          onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+          title="시설 삭제 확인"
+          description={`"${confirmDialog.name}" 시설을 삭제하시겠습니까?`}
+          confirmText="삭제"
+          cancelText="취소"
+          onConfirm={executeDeleteFacility}
+          variant="destructive"
+        />
     </div>
   );
 }

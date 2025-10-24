@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, AlertCircle } from "lucide-react";
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm";
+import { toast } from "sonner";
 
 export default function GoTogetherManagementTab() {
   const router = useRouter();
@@ -28,6 +30,11 @@ export default function GoTogetherManagementTab() {
     title: "",
     message: "",
   });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    id: number;
+    name: string;
+  }>({ open: false, id: 0, name: "" });
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -96,7 +103,9 @@ export default function GoTogetherManagementTab() {
 
     // 전화번호 유효성 검사
     if (formData.managerPhone && !validatePhoneNumber(formData.managerPhone)) {
-      showAlert("입력 오류", "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678");
+      toast.error("입력 오류", {
+        description: "올바른 전화번호 형식이 아닙니다.\n예: 010-1234-5678",
+      });
       return;
     }
 
@@ -113,9 +122,13 @@ export default function GoTogetherManagementTab() {
         notes: "",
       });
       refetch();
-      showAlert("성공", "키오스크 위치가 성공적으로 등록되었습니다");
+      toast.success("성공", {
+        description: "키오스크 위치가 성공적으로 등록되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "등록 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "등록 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -126,15 +139,21 @@ export default function GoTogetherManagementTab() {
   };
 
   // 키오스크 삭제
-  const handleDeleteKiosk = async (id: number, name: string) => {
-    if (!confirm(`정말 "${name}" 키오스크를 삭제하시겠습니까?`)) return;
+  const handleDeleteKiosk = (id: number, name: string) => {
+    setConfirmDialog({ open: true, id, name });
+  };
 
+  const executeDeleteKiosk = async () => {
     try {
-      await deleteKiosk.mutateAsync(id);
+      await deleteKiosk.mutateAsync(confirmDialog.id);
       refetch();
-      showAlert("성공", "키오스크가 성공적으로 삭제되었습니다");
+      toast.success("성공", {
+        description: "키오스크가 성공적으로 삭제되었습니다",
+      });
     } catch (error: any) {
-      showAlert("오류", error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다");
+      toast.error("오류", {
+        description: error.response?.data?.error?.message || "삭제 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -309,29 +328,29 @@ export default function GoTogetherManagementTab() {
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-black">
-                  <th className="p-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">키오스크명</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">위치</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">담당자</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">상태</th>
-                  <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
+                  <th className="px-3 py-6 text-left text-lg font-semibold text-black whitespace-nowrap">번호</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">키오스크명</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">위치</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">담당자</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">연락처</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">상태</th>
+                  <th className="px-3 py-6 text-center text-lg font-semibold text-black">작업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredKiosks.map((kiosk, index) => (
                   <tr key={kiosk.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewDetail(kiosk.id)}>
-                    <td className="p-6 text-base">
+                    <td className="px-3 py-4 text-base">
                       {(page - 1) * 10 + index + 1}
                     </td>
-                    <td className="p-6 text-base font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
-                    <td className="p-6 text-sm" title={kiosk.location}>
+                    <td className="px-4 py-4 text-base font-medium truncate" title={kiosk.name}>{kiosk.name}</td>
+                    <td className="px-4 py-4 text-base" title={kiosk.location}>
                       <div className="line-clamp-2">{kiosk.location}</div>
                     </td>
-                    <td className="p-6 text-base truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
-                    <td className="p-6 text-base" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
-                    <td className="p-6 text-base">{getStatusBadge(kiosk.status)}</td>
-                    <td className="p-6" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-4 text-base truncate" title={kiosk.managerName || "-"}>{kiosk.managerName || "-"}</td>
+                    <td className="px-4 py-4 text-base" title={kiosk.managerPhone || "-"}>{kiosk.managerPhone || "-"}</td>
+                    <td className="px-4 py-4 text-base">{getStatusBadge(kiosk.status)}</td>
+                    <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"
@@ -403,6 +422,17 @@ export default function GoTogetherManagementTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialogConfirm
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title="키오스크 삭제 확인"
+        description={`정말 "${confirmDialog.name}" 키오스크를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={executeDeleteKiosk}
+        variant="destructive"
+      />
     </div>
   );
 }

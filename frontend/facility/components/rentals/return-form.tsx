@@ -83,7 +83,7 @@ export function ReturnForm({ currentRentals, preselectedRentalId }: ReturnFormPr
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="w-full">
       <h2 className="text-2xl font-bold text-black mb-6 leading-relaxed">기기 반납</h2>
 
       {currentRentals.length === 0 ? (
@@ -92,7 +92,7 @@ export function ReturnForm({ currentRentals, preselectedRentalId }: ReturnFormPr
         </div>
       ) : (
         <div className="space-y-6">
-          <div>
+          <div className="w-full">
             <Label htmlFor="search" className="text-lg font-semibold text-black leading-relaxed">
               대여 기록 검색
             </Label>
@@ -101,12 +101,12 @@ export function ReturnForm({ currentRentals, preselectedRentalId }: ReturnFormPr
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="mt-2 min-h-[44px] text-lg border-2 border-black"
+              className="mt-2 min-h-[44px] text-lg border-2 border-black w-full"
               placeholder="대여자 이름 또는 기기명으로 검색"
             />
           </div>
 
-          <div className="grid gap-4 max-h-96 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
             {filteredRentals.map((rental) => {
               // Group devices by type and sum quantities
               const deviceGroups = rental.rentalDevices.reduce((acc, device) => {

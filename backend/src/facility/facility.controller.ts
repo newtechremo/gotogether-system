@@ -24,6 +24,9 @@ import {
   CreateFacilityDto,
   UpdateFacilityDto,
 } from '../common/dto/facility.dto';
+import {
+  ResetFacilityPasswordDto,
+} from '../common/dto/reset-facility-password.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { User } from '../common/decorators/user.decorator';
 import {
@@ -159,6 +162,27 @@ export class FacilityController {
       success: true,
       data: result,
       message: '시설이 삭제되었습니다.',
+    };
+  }
+
+  @Put(':id/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '시설 비밀번호 재설정 (전체관리자용)' })
+  @ApiResponse({ status: 200, description: '비밀번호 재설정 성공' })
+  @ApiResponse({
+    status: 404,
+    description: '시설을 찾을 수 없음',
+    type: ApiErrorResponse,
+  })
+  async resetPassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() resetPasswordDto: ResetFacilityPasswordDto,
+  ): Promise<ApiSuccessResponse> {
+    const result = await this.facilityService.resetPassword(id, resetPasswordDto);
+    return {
+      success: true,
+      data: result,
+      message: result.message,
     };
   }
 }

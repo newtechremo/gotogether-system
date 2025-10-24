@@ -92,10 +92,14 @@ export function useResetFacilityPassword() {
     mutationFn: ({ id, data }: { id: number; data: ResetPasswordRequest }) =>
       facilityService.resetPassword(id, data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["facility", response.data.data.newPassword] });
+      console.log('[useFacility] onSuccess 호출됨:', { response });
+      // response.data가 이미 API 응답의 data 부분
+      // response.data.newPassword로 접근
+      queryClient.invalidateQueries({ queryKey: ["facilities"] });
       // Toast message is handled in the modal component to show the new password
     },
     onError: (error: any) => {
+      console.error('[useFacility] onError 호출됨:', { error });
       const errorMessage = error.response?.data?.error?.message || "비밀번호 재설정에 실패했습니다.";
       toast.error("재설정 실패", {
         description: errorMessage,

@@ -14,6 +14,8 @@ import {
 import { AlertTriangle, Eye, EyeOff, XCircle, Filter, Loader2 } from "lucide-react";
 import { useOverdueRentals, useKiosks } from "@/lib/hooks/useAdmin";
 import { useForceReturnRental } from "@/lib/hooks/useKiosks";
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm";
+import { toast } from "sonner";
 
 export default function OverdueRentalsTab() {
   const { data: overdueRentals, isLoading, error, refetch } = useOverdueRentals();
@@ -24,6 +26,12 @@ export default function OverdueRentalsTab() {
   const [timeFilter, setTimeFilter] = useState<"all" | "24" | "48" | "72">("all");
   const [sortBy, setSortBy] = useState<"time" | "location" | "device">("time");
   const [visiblePhoneIds, setVisiblePhoneIds] = useState<Set<number>>(new Set());
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    id: number;
+    kioskId: number;
+    deviceName: string;
+  }>({ open: false, id: 0, kioskId: 0, deviceName: "" });
 
   const togglePhoneVisibility = (rentalId: number) => {
     setVisiblePhoneIds((prev) => {
@@ -53,15 +61,24 @@ export default function OverdueRentalsTab() {
     return `${hours}시간`;
   };
 
-  const handleForceReturn = async (id: number, kioskId: number, deviceName: string) => {
-    if (!confirm(`${deviceName} 장비를 강제 반납 처리하시겠습니까?`)) return;
+  const handleForceReturn = (id: number, kioskId: number, deviceName: string) => {
+    setConfirmDialog({ open: true, id, kioskId, deviceName });
+  };
 
+  const executeForceReturn = async () => {
     try {
-      await forceReturnRental.mutateAsync({ id, kioskId });
+      await forceReturnRental.mutateAsync({
+        id: confirmDialog.id,
+        kioskId: confirmDialog.kioskId,
+      });
       refetch();
-      alert("강제 반납이 완료되었습니다");
+      toast.success("강제 반납 완료", {
+        description: "강제 반납이 완료되었습니다",
+      });
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다");
+      toast.error("강제 반납 실패", {
+        description: error.response?.data?.error?.message || "강제 반납 중 오류가 발생했습니다",
+      });
     }
   };
 
@@ -208,52 +225,52 @@ export default function OverdueRentalsTab() {
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: '5%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '14%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '13%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '8%' }} />
-                <col style={{ width: '15%' }} />
-                <col style={{ width: '8%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '13%' }} />
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-black">
-                  <th className="p-6 text-left text-lg font-semibold text-black">번호</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">키오스크명</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">위치</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">시리얼 번호</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">대여시간</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">경과 시간</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">심각도</th>
-                  <th className="p-6 text-left text-lg font-semibold text-black">연락처</th>
-                  <th className="p-6 text-center text-lg font-semibold text-black">작업</th>
+                  <th className="px-3 py-6 text-center text-lg font-semibold text-black">번호</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">키오스크명</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">위치</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">시리얼 번호</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">대여시간</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">경과 시간</th>
+                  <th className="px-3 py-6 text-center text-lg font-semibold text-black">심각도</th>
+                  <th className="px-4 py-6 text-left text-lg font-semibold text-black">연락처</th>
+                  <th className="px-3 py-6 text-center text-lg font-semibold text-black">작업</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredRentals.map((rental, index) => (
                   <tr key={rental.id} className="hover:bg-gray-50">
-                    <td className="p-6 text-base">{index + 1}</td>
-                    <td className="p-6 text-base font-medium">{rental.kioskName}</td>
-                    <td className="p-6 text-base">
+                    <td className="px-3 py-4 text-center text-base">{index + 1}</td>
+                    <td className="px-4 py-4 text-base font-medium">{rental.kioskName}</td>
+                    <td className="px-4 py-4 text-base">
                       <div className="line-clamp-3" title={rental.location}>{rental.location}</div>
                     </td>
-                    <td className="p-6 text-base">
+                    <td className="px-4 py-4 text-base">
                       <div className="line-clamp-3 whitespace-pre-line">
                         {rental.deviceName}{'\n'}
                         <span className="text-sm text-gray-600">{rental.deviceType}</span>
                       </div>
                     </td>
-                    <td className="p-6 text-base">{rental.rentalTime}</td>
-                    <td className="p-6 text-base">
+                    <td className="px-4 py-4 text-base">{rental.rentalTime}</td>
+                    <td className="px-4 py-4 text-base">
                       <span className={rental.elapsedHours > 72 ? "text-red-600 font-bold" : "text-yellow-600 font-medium"}>
                         {getElapsedTimeDisplay(rental.elapsedHours)}
                       </span>
                     </td>
-                    <td className="p-6 text-base">
+                    <td className="px-3 py-4 text-center text-base">
                       {getSeverityBadge(rental.severity)}
                     </td>
-                    <td className="p-6 text-base">
+                    <td className="px-4 py-4 text-base">
                       <div className="flex items-center gap-2">
                         <span>
                           {visiblePhoneIds.has(rental.id) ? rental.renterPhone : rental.renterPhoneMasked}
@@ -273,7 +290,7 @@ export default function OverdueRentalsTab() {
                         </Button>
                       </div>
                     </td>
-                    <td className="p-6">
+                    <td className="px-3 py-4">
                       <div className="flex justify-center">
                         <Button
                           variant="destructive"
@@ -294,6 +311,17 @@ export default function OverdueRentalsTab() {
           </div>
         </Card>
       )}
+
+      <AlertDialogConfirm
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title="강제 반납 확인"
+        description={`${confirmDialog.deviceName} 장비를 강제 반납 처리하시겠습니까?`}
+        confirmText="강제 반납"
+        cancelText="취소"
+        onConfirm={executeForceReturn}
+        variant="destructive"
+      />
     </div>
   );
 }

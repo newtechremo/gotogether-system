@@ -86,8 +86,9 @@ export class AdminService {
     facilityId: number,
     resetPasswordDto: ResetFacilityPasswordDto,
   ): Promise<ResetFacilityPasswordResponseDto> {
+    // 삭제되지 않은 시설만 조회 (비활성 시설도 재설정 가능)
     const facility = await this.facilityRepository.findOne({
-      where: { id: facilityId, isActive: true },
+      where: { id: facilityId, deletedAt: IsNull() },
     });
 
     if (!facility) {

@@ -83,7 +83,10 @@
       "Bash(ssh:*)",
       "Bash(scp:*)",
       "Bash(aws rds describe-db-instances:*)",
-      "Bash(aws ec2 authorize-security-group-ingress:*)"
+      "Bash(aws ec2 authorize-security-group-ingress:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJ0eXBlIjoiYWRtaW4iLCJyb2xlIjoic3VwZXJfYWRtaW4iLCJuYW1lIjoi7LWc6rOg6rSA66as7J6QIiwiaWF0IjoxNzYxMjYxMTQyLCJleHAiOjE3NjEzNDc1NDJ9.8dAOKatCsHUmxfz_-lXV29Qi9tjgH8pONotjWfaIrkQ\")",
+      "Bash(head:*)",
+      "Bash(tail:*)"
     ],
     "deny": [],
     "ask": []

@@ -35,15 +35,43 @@ export function ResetPasswordModal({
       ? { autoGenerate: true }
       : { newPassword: manualPassword };
 
+    console.log('[비밀번호 재설정] 요청 시작', {
+      facilityId,
+      facilityName,
+      mode,
+      data
+    });
+
     resetPassword.mutate(
       { id: facilityId, data },
       {
         onSuccess: (response) => {
-          setNewPassword(response.data.data.newPassword);
+          console.log('[비밀번호 재설정] 성공 응답 받음:', {
+            fullResponse: response,
+            responseData: response.data,
+            newPassword: response.data?.newPassword,
+            message: response.data?.message
+          });
+
+          // response.data가 { newPassword: "...", message: "..." } 형태
+          setNewPassword(response.data.newPassword);
           toast.success("비밀번호가 재설정되었습니다", {
             description: `${facilityName}의 비밀번호가 변경되었습니다.`,
           });
         },
+        onError: (error: any) => {
+          console.error('[비밀번호 재설정] 에러 발생:', {
+            error,
+            errorResponse: error.response,
+            errorData: error.response?.data,
+            errorMessage: error.message,
+            errorStatus: error.response?.status
+          });
+
+          toast.error("비밀번호 재설정 실패", {
+            description: error.response?.data?.error?.message || error.message || "알 수 없는 오류가 발생했습니다.",
+          });
+        }
       }
     );
   };

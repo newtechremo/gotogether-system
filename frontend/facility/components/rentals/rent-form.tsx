@@ -241,12 +241,12 @@ export function RentForm({ devices, preselectedType }: RentFormProps) {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="w-full">
       <h2 className="text-2xl font-bold text-black mb-6 leading-relaxed">기기 대여</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 2열 그리드 레이아웃 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           {/* 1. 기기종류 */}
           <div>
             <Label htmlFor="deviceType" className="text-lg font-semibold text-black leading-relaxed">

@@ -66,6 +66,9 @@ export class Facility {
   @Column({ type: 'boolean', name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ type: 'timestamp', name: 'deleted_at', nullable: true, default: null })
+  deletedAt: Date;
+
   @OneToMany(() => FacilityDevice, (device) => device.facility)
   facilityDevices: FacilityDevice[];
 

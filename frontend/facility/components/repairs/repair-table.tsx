@@ -3,6 +3,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AlertDialogConfirm } from "@/components/ui/alert-dialog-confirm"
+import { toast } from "sonner"
 import type { FacilityRepair } from "@/lib/api/repair.service"
 import { AddRepairDialog } from "./add-repair-dialog"
 import { EditRepairDialog } from "./edit-repair-dialog"
@@ -33,11 +35,19 @@ interface RepairTableProps {
 export function RepairTable({ repairs }: RepairTableProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingRepair, setEditingRepair] = useState<FacilityRepair | null>(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [repairToDelete, setRepairToDelete] = useState<FacilityRepair | null>(null)
   const { mutate: deleteRepair } = useDeleteRepair()
 
   const handleDelete = (repair: FacilityRepair) => {
-    if (confirm(`정말 "${repair.deviceItem?.deviceCode}" 기기의 고장신고를 삭제하시겠습니까?`)) {
-      deleteRepair(repair.id)
+    setRepairToDelete(repair)
+    setConfirmDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (repairToDelete) {
+      deleteRepair(repairToDelete.id)
+      setRepairToDelete(null)
     }
   }
 
@@ -167,6 +177,17 @@ export function RepairTable({ repairs }: RepairTableProps) {
         onSuccess={() => {
           // Refresh will be handled by React Query
         }}
+      />
+
+      <AlertDialogConfirm
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        title="고장신고 삭제"
+        description={`정말 "${repairToDelete?.deviceItem?.deviceCode}" 기기의 고장신고를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={handleConfirmDelete}
+        variant="destructive"
       />
     </div>
   )

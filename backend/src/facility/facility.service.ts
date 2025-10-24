@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Facility } from '../entities/facility.entity';
 import {
@@ -33,6 +33,7 @@ export class FacilityService {
 
   /**
    * 시설 목록 조회 (페이지네이션)
+   * 비활성 시설도 포함
    */
   async findAll(page: number = 1, limit: number = 10, search?: string) {
     const queryBuilder = this.facilityRepository.createQueryBuilder('facility');
@@ -45,8 +46,8 @@ export class FacilityService {
       );
     }
 
-    // 삭제되지 않은 항목만
-    queryBuilder.andWhere('facility.isActive = :isActive', { isActive: true });
+    // 삭제되지 않은 시설만 표시
+    queryBuilder.andWhere('facility.deletedAt IS NULL');
 
     // 페이지네이션
     const [items, total] = await queryBuilder
@@ -66,10 +67,11 @@ export class FacilityService {
 
   /**
    * 시설 상세 조회
+   * 비활성 시설도 조회 가능
    */
   async findOne(id: number) {
     const facility = await this.facilityRepository.findOne({
-      where: { id, isActive: true },
+      where: { id },
       relations: ['creator'],
     });
 
@@ -116,10 +118,11 @@ export class FacilityService {
 
   /**
    * 시설 수정
+   * 비활성 시설도 수정 가능
    */
   async update(id: number, updateFacilityDto: UpdateFacilityDto) {
     const facility = await this.facilityRepository.findOne({
-      where: { id, isActive: true },
+      where: { id },
     });
 
     if (!facility) {
@@ -169,18 +172,19 @@ export class FacilityService {
 
   /**
    * 시설 소프트 삭제
+   * deletedAt 설정
    */
   async remove(id: number) {
     const facility = await this.facilityRepository.findOne({
-      where: { id, isActive: true },
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!facility) {
       throw new NotFoundException(`시설을 찾을 수 없습니다. ID: ${id}`);
     }
 
-    // 소프트 삭제 (isActive를 false로 변경)
-    facility.isActive = false;
+    // 소프트 삭제: deletedAt 설정
+    facility.deletedAt = new Date();
     await this.facilityRepository.save(facility);
 
     return { message: '시설이 삭제되었습니다.' };
@@ -298,13 +302,15 @@ export class FacilityService {
 
   /**
    * 전체관리자용: 시설 비밀번호 재설정
+   * 비활성 시설도 재설정 가능 (삭제된 시설은 불가)
    */
   async resetPassword(
     facilityId: number,
     resetPasswordDto: ResetFacilityPasswordDto,
   ): Promise<ResetFacilityPasswordResponseDto> {
+    // 삭제되지 않은 시설만 조회
     const facility = await this.facilityRepository.findOne({
-      where: { id: facilityId, isActive: true },
+      where: { id: facilityId, deletedAt: IsNull() },
     });
 
     if (!facility) {
