@@ -57,13 +57,15 @@ fi
 # Stop existing PM2 process if running
 pm2 delete gotogether-backend 2>/dev/null || echo "No existing process to delete"
 
-# Start the application with PM2
+# Start the application with PM2, loading .env file
 pm2 start $MAIN_FILE \
     --name gotogether-backend \
     --max-memory-restart 800M \
     --log /home/ec2-user/logs/gotogether-backend.log \
     --error /home/ec2-user/logs/gotogether-backend-error.log \
-    --time
+    --time \
+    --env production \
+    --update-env
 
 # Save PM2 process list
 pm2 save
