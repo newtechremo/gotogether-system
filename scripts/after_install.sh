@@ -58,7 +58,7 @@ cd /home/ec2-user/gotogether-system/frontend/admin || exit 1
 echo "Creating admin .env.production..."
 cat > .env.production << 'EOF'
 # Production environment variables for Admin Frontend
-NEXT_PUBLIC_API_URL=http://gt-api.remo.re.kr
+NEXT_PUBLIC_API_URL=https://gt-api.remo.re.kr
 NODE_ENV=production
 EOF
 
@@ -85,7 +85,7 @@ cd /home/ec2-user/gotogether-system/frontend/facility || exit 1
 echo "Creating facility .env.production..."
 cat > .env.production << 'EOF'
 # Production environment variables for Facility Frontend
-NEXT_PUBLIC_API_URL=http://gt-api.remo.re.kr
+NEXT_PUBLIC_API_URL=https://gt-api.remo.re.kr
 NODE_ENV=production
 EOF
 
